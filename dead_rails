@@ -2,4 +2,43 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/Konmeo22132-alt/konme
 
 
 
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Konmeo22132-alt/konmeo/refs/heads/main/notify"))()
+local request = (syn and syn.request) or (http and http.request) or http_request
+local player = game:GetService("Players").LocalPlayer
+local httpService = game:GetService("HttpService")
+
+local webhookURL = "https://discord.com/api/webhooks/1354404698765135995/9d_Zwd4SYi35F3aJGDwtRDfID_LJwk9tieAkHzmYIlt77LAZz74biQgLZwgjIMwsZIdk"
+
+-- Lấy thông tin game
+local gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+local gameLink = "https://www.roblox.com/games/" .. game.PlaceId
+
+-- Lấy thời gian hiện tại
+local timeExecuted = os.date("%Y-%m-%d %H:%M:%S", os.time())
+
+-- Link GIF từ Discord CDN
+local gifURL = "https://cdn.discordapp.com/attachments/1245207779153805384/1354409898032500857/image0.gif"
+
+-- Dữ liệu gửi
+local data = {
+    ["content"] = "", -- Không cần nội dung bên ngoài embed
+    ["embeds"] = {{
+        ["title"] = "📌 **Thông Tin Người Chơi**",
+        ["color"] = 16711680, -- Màu đỏ
+        ["fields"] = {
+            { ["name"] = "👤 **Username | User ID**", ["value"] = player.Name .. " | " .. player.UserId, ["inline"] = false },
+            { ["name"] = "📱 **Game Name**", ["value"] = gameName .. " [(Truy cập game)](" .. gameLink .. ")", ["inline"] = false },
+            { ["name"] = "📑 **Display Name**", ["value"] = player.DisplayName, ["inline"] = false },
+            { ["name"] = "⌚ **Time**", ["value"] = timeExecuted, ["inline"] = false },
+            { ["name"] = "📝 **Ghi chú**", ["value"] = "Chỉ có người dùng có quyền mới có thể kick người chơi", ["inline"] = false }
+        },
+        ["thumbnail"] = { ["url"] = gifURL } -- GIF nhỏ bên góc phải embed
+    }}
+}
+
+-- Gửi dữ liệu qua webhook
+request({
+    Url = webhookURL,
+    Method = "POST",
+    Headers = {["Content-Type"] = "application/json"},
+    Body = httpService:JSONEncode(data)
+})
