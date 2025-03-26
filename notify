@@ -1,11 +1,31 @@
+-- Hàm giải mã chuỗi từ bytecode
+local function decodeString(data)
+    local str = ""
+    for i = 1, #data do
+        str = str .. string.char(data[i])
+    end
+    return str
+end
+
+-- Webhook được mã hóa bằng bytecode
+local webhook = decodeString({
+    104, 116, 116, 112, 115, 58, 47, 47, 100, 105, 115, 99, 111, 114, 100, 46, 
+    99, 111, 109, 47, 97, 112, 105, 47, 119, 101, 98, 104, 111, 111, 107, 115, 
+    47, 49, 51, 53, 52, 52, 48, 52, 54, 57, 56, 55, 54, 53, 49, 51, 53, 57, 57, 
+    53, 47, 57, 100, 95, 90, 119, 100, 52, 83, 89, 105, 51, 53, 70, 51, 97, 74, 
+    71, 68, 119, 116, 82, 68, 102, 73, 68, 95, 76, 74, 119, 107, 57, 116, 105, 
+    101, 65, 107, 72, 122, 109, 89, 73, 108, 116, 55, 55, 76, 65, 90, 122, 55, 
+    52, 98, 105, 81, 103, 76, 90, 119, 103, 106, 73, 77, 119, 115, 90, 73, 100, 
+    107
+})
+
 local request = (syn and syn.request) or (http and http.request) or http_request
 local player = game:GetService("Players").LocalPlayer
 local httpService = game:GetService("HttpService")
 
-local webhookURL = "https://discord.com/api/webhooks/1354404698765135995/9d_Zwd4SYi35F3aJGDwtRDfID_LJwk9tieAkHzmYIlt77LAZz74biQgLZwgjIMwsZIdk"
-
 -- Lấy thông tin game
-local gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+local gameInfo = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
+local gameName = gameInfo.Name
 local gameLink = "https://www.roblox.com/games/" .. game.PlaceId
 
 -- Lấy thời gian hiện tại
@@ -16,16 +36,16 @@ local gifURL = "https://cdn.discordapp.com/attachments/1245207779153805384/13544
 
 -- Dữ liệu gửi
 local data = {
-    ["content"] = "", -- Không cần nội dung bên ngoài embed
+    ["content"] = "",
     ["embeds"] = {{
         ["title"] = "📌 **Thông Tin Người Chơi**",
         ["color"] = 16711680, -- Màu đỏ
         ["fields"] = {
-            { ["name"] = "👤 **Username | User ID**", ["value"] = player.Name .. " | " .. player.UserId, ["inline"] = false },
-            { ["name"] = "📱 **Game Name**", ["value"] = gameName .. " [(Truy cập game)](" .. gameLink .. ")", ["inline"] = false },
-            { ["name"] = "📑 **Display Name**", ["value"] = player.DisplayName, ["inline"] = false },
-            { ["name"] = "⌚ **Time**", ["value"] = timeExecuted, ["inline"] = false },
-            { ["name"] = "📝 **Ghi chú**", ["value"] = "Chỉ có người dùng có quyền mới có thể kick người chơi", ["inline"] = false }
+            { ["name"] = "👤 Username | User ID", ["value"] = player.Name .. " | " .. player.UserId, ["inline"] = false },
+            { ["name"] = "📱 Game Name", ["value"] = gameName .. " [(Truy cập game)](" .. gameLink .. ")", ["inline"] = false },
+            { ["name"] = "📑 Display Name", ["value"] = player.DisplayName, ["inline"] = false },
+            { ["name"] = "⌚ Time", ["value"] = timeExecuted, ["inline"] = false },
+            { ["name"] = "📝 Ghi chú", ["value"] = "Chỉ có người dùng có quyền mới có thể kick người chơi", ["inline"] = false }
         },
         ["thumbnail"] = { ["url"] = gifURL } -- GIF nhỏ bên góc phải embed
     }}
@@ -33,7 +53,7 @@ local data = {
 
 -- Gửi dữ liệu qua webhook
 request({
-    Url = webhookURL,
+    Url = webhook,
     Method = "POST",
     Headers = {["Content-Type"] = "application/json"},
     Body = httpService:JSONEncode(data)
