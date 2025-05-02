@@ -5,12 +5,12 @@ const originalNow = Date.now;
 const start = originalNow();  
 
 Date.now = function() {  
-    return start + (originalNow() - start) * 100;  
+    return start + (originalNow() - start) * 10;  
 };  
 
 const originalSetTimeout = window.setTimeout;  
 window.setTimeout = function(callback, delay, ...args) {  
-    return originalSetTimeout(callback, delay / 100, ...args);  
+    return originalSetTimeout(callback, delay / 10, ...args);  
 };  
 
 const originalSetInterval = window.setInterval;  
