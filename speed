@@ -1,32 +1,24 @@
 (() => {
-    // Tự động cuộn xuống dưới cùng
-    window.scrollTo(0, document.body.scrollHeight);
+window.scrollTo(0, document.body.scrollHeight);
 
-    // Ghi đè Date.now để tăng tốc thời gian gấp 1000 lần
-    const originalNow = Date.now;
-    const start = originalNow();
+const originalNow = Date.now;  
+const start = originalNow();  
 
-    Date.now = function() {
-        return start + (originalNow() - start) * 1000;
-    };
+Date.now = function() {  
+    return start + (originalNow() - start) * 100;  
+};  
 
-    // Ghi đè setTimeout
-    const originalSetTimeout = window.setTimeout;
-    window.setTimeout = function(callback, delay, ...args) {
-        return originalSetTimeout(callback, delay / 1000, ...args);
-    };
+const originalSetTimeout = window.setTimeout;  
+window.setTimeout = function(callback, delay, ...args) {  
+    return originalSetTimeout(callback, delay / 100, ...args);  
+};  
 
-    // Ghi đè setInterval
-    const originalSetInterval = window.setInterval;
-    window.setInterval = function(callback, delay, ...args) {
-        return originalSetInterval(callback, delay / 1000, ...args);
-    };
+const originalSetInterval = window.setInterval;  
+window.setInterval = function(callback, delay, ...args) {  
+    return originalSetInterval(callback, delay / 10, ...args);  
+};  
 
-    // Log với styling đầy đủ
-    console.log(
-        '%c🎉 Bypass yeumoney by Konmeo Hub 🎉\n%cBáo lỗi/theo dõi tôi tại đây:\n%cDiscord server: discord.gg/huneipa\nDiscord: @konmeo22132\nYouTube: https://youtube.com/@huneee205',
-        'color: #ff69b4; font-size: 16px; font-weight: bold;',
-        'color: #ff8c00; font-size: 15px; font-weight: bold;',
-        'color: #ffffff; font-size: 13px; font-weight: normal;'
-    );
+console.log("🎉 Bypass yeumoney by Konmeo Hub🎉\n Báo lỗi/theo dõi tôi tại đây:\nDiscord server: discord.gg/huneipa\nDiscord:@konmeo22132\nYouTube:https://youtube.com/@huneee205");
+
 })();
+
