@@ -1,35 +1,37 @@
 (() => {
-    let speedMultiplier = 5;
+    let scrollSpeedSlow = false;
+
     const originalNow = Date.now;
     const start = originalNow();
 
-    // Hook thời gian
+    // Giữ thời gian x5 mãi mãi
     Date.now = function () {
-        return start + (originalNow() - start) * speedMultiplier;
+        return start + (originalNow() - start) * 5;
     };
 
     const originalSetTimeout = window.setTimeout;
     window.setTimeout = function (cb, delay) {
-        return originalSetTimeout(cb, delay / speedMultiplier);
+        return originalSetTimeout(cb, delay / 5);
     };
 
     const originalSetInterval = window.setInterval;
     window.setInterval = function (cb, delay) {
-        return originalSetInterval(cb, delay / speedMultiplier);
+        return originalSetInterval(cb, delay / 5);
     };
 
-    // Tự động thay đổi tốc độ thời gian
+    // Thay đổi tốc độ cuộn ngẫu nhiên theo chu kỳ
     setInterval(() => {
-        speedMultiplier = 1;
-        console.log("%c[Konmeo Hub] ❌ Điều chỉnh tốc độ để tránh bị phát hiện.", "color: red; font-weight: bold;");
+        scrollSpeedSlow = true;
+        console.log("%c[Konmeo Hub] ❌ Điều chỉnh tốc độ cuộn để tránh bị phát hiện.", "color: red; font-weight: bold;");
+
         setTimeout(() => {
-            speedMultiplier = 5;
-            console.log("%c[Konmeo Hub] ⚡ Quay lại tốc độ x5", "color: lime; font-weight: bold;");
-        }, 3000 + Math.random() * 3000); // Quay lại x5 sau 3-6s
-    }, 15000 + Math.random() * 10000); // Mỗi 15-25s giảm tốc
+            scrollSpeedSlow = false;
+            console.log("%c[Konmeo Hub] ✅ Quay lại tốc độ cuộn bình thường.", "color: lime; font-weight: bold;");
+        }, 3000 + Math.random() * 3000); // chậm 3-6s
+    }, 15000 + Math.random() * 10000); // mỗi 15-25s
 
     console.log(
-        "%c🎉 Bypass Link4m by Konmeo Hub 🎉 \n%cDiscord: @konmeo22132 | discord.gg/huneipa \nYouTube: https://youtube.com/@huneee205",
+        "%c🎉 Bypass Link4m by Konmeo Hub 🎉\n%cDiscord: @konmeo22132 | discord.gg/huneipa\nYouTube: https://youtube.com/@huneee205",
         "color: white; font-size: 16px; font-weight: bold;",
         "color: orange; font-size: 13px; font-weight: bold;"
     );
@@ -41,16 +43,18 @@
         console.log("%c[Konmeo Hub] 🚨 Đang kéo xuống, vui lòng không can thiệp để tránh lỗi", "color: red; font-weight: bold;");
 
         while (window.scrollY + window.innerHeight < document.body.scrollHeight) {
-            const randomStep = Math.floor(Math.random() * 100) + 50;
-            const randomDelay = Math.floor(Math.random() * 40) + 20;
-            window.scrollBy(0, randomStep);
-            await delay(randomDelay);
+            const step = Math.floor(Math.random() * 100) + 50;
+            const baseDelay = scrollSpeedSlow ? 80 : 25;
+            const delayTime = Math.floor(Math.random() * 40) + baseDelay;
+
+            window.scrollBy(0, step);
+            await delay(delayTime);
         }
 
         console.log("%c[Konmeo Hub] ✅ Đã kéo xuống dưới cùng", "color: green; font-weight: bold;");
         await delay(1000);
 
-        // Tìm và click nút “LẤY MÃ”
+        // Click nút "LẤY MÃ"
         const getCodeButtons = [...document.querySelectorAll("span, div")].filter(el =>
             el.textContent.trim().toUpperCase() === "LẤY MÃ"
         );
