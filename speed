@@ -2,7 +2,7 @@
     const originalNow = Date.now;
     const start = originalNow();
 
-    Date.now = () => start + (originalNow() - start) * 5;
+    Date.now = () => start + (originalNow() - start) * 8;
 
     const originalSetTimeout = window.setTimeout;
     window.setTimeout = (cb, delay, ...args) => originalSetTimeout(cb, delay / 5 + Math.random() * 50, ...args);
