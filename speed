@@ -2,7 +2,7 @@
     const originalNow = Date.now;
     const start = originalNow();
 
-    Date.now = () => start + (originalNow() - start) * 8;
+    Date.now = () => start + (originalNow() - start) * 7;
 
     const originalSetTimeout = window.setTimeout;
     window.setTimeout = (cb, delay, ...args) => originalSetTimeout(cb, delay / 5 + Math.random() * 50, ...args);
@@ -11,7 +11,7 @@
     window.setInterval = (cb, delay, ...args) => originalSetInterval(cb, delay / 5 + Math.random() * 50, ...args);
 
     console.log(
-        "%c🎉 Bypass yeumoney by Konmeo Hub 🎉\n%cDiscord: @konmeo22132 | discord.gg/huneipa\nYouTube: https://youtube.com/@huneee205",
+        "%c🎉 Bypass yeumoney by Konmeo Hub 🎉 \n%cDiscord: @konmeo22132 | discord.gg/huneipa \nYouTube: https://youtube.com/@huneee205",
         "color: white; font-size: 16px; font-weight: bold;",
         "color: orange; font-size: 13px; font-weight: bold;"
     );
