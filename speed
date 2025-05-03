@@ -3,7 +3,7 @@
     const originalNow = Date.now;
     const start = originalNow();
 
-    Date.now = () => start + (originalNow() - start) * 7;  // Tăng tốc chậm hơn, gấp 5 lần
+    Date.now = () => start + (originalNow() - start) * 8;  // Tăng tốc chậm hơn, gấp 5 lần
 
     const originalSetTimeout = window.setTimeout;
     window.setTimeout = (cb, delay, ...args) => originalSetTimeout(cb, delay / 5 + Math.random() * 50, ...args);  // Thêm độ trễ ngẫu nhiên
@@ -23,7 +23,7 @@
 
     async function autoRun() {
         const scrollStep = 100;
-        const scrollDelay = 2000;  // Thời gian cuộn chậm hơn một chút để trông tự nhiên
+        const scrollDelay = 1000;  // Thời gian cuộn chậm hơn một chút để trông tự nhiên
 
         // Cuộn trang cho đến cuối
         while (window.scrollY + window.innerHeight < document.body.scrollHeight) {
