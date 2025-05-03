@@ -2,19 +2,19 @@
     const originalNow = Date.now;
     const start = originalNow();
 
-    // Giả lập thời gian tăng 10x
+    // Giả lập thời gian tăng 5x
     Date.now = function () {
-        return start + (originalNow() - start) * 10;
+        return start + (originalNow() - start) * 5;
     };
 
     const originalSetTimeout = window.setTimeout;
     window.setTimeout = function (cb, delay) {
-        return originalSetTimeout(cb, delay / 10);
+        return originalSetTimeout(cb, delay / 5);
     };
 
     const originalSetInterval = window.setInterval;
     window.setInterval = function (cb, delay) {
-        return originalSetInterval(cb, delay / 10);
+        return originalSetInterval(cb, delay / 5);
     };
 
     console.log(
@@ -23,17 +23,15 @@
         "color: orange; font-size: 13px; font-weight: bold;"
     );
 
-    const delay = function (ms) {
-        return new Promise(res => setTimeout(res, ms));
-    };
+    const delay = ms => new Promise(res => setTimeout(res, ms));
 
     let foundCode = false;
 
     async function autoRun() {
+        console.log("%c[Konmeo Hub] 🚨 Đang kéo xuống, vui lòng không can thiệp để tránh lỗi", "color: red; font-weight: bold;");
+
         const scrollStep = 100;
         const scrollDelay = 10;
-
-        console.log("%c[Konmeo Hub] 🚨 Đang kéo xuống, vui lòng không can thiệp để tránh lỗi", "color: red; font-weight: bold;");
 
         while (window.scrollY + window.innerHeight < document.body.scrollHeight) {
             window.scrollBy(0, scrollStep);
@@ -44,21 +42,22 @@
 
         await delay(1000);
 
-        // Tự động click nút "LẤY MÃ"
-        const getCodeButtons = Array.from(document.querySelectorAll("span"))
-            .filter(el => el.textContent.trim().toUpperCase() === "LẤY MÃ");
+        // Tìm nút "LẤY MÃ" dạng span hoặc div
+        const getCodeButtons = [
+            ...document.querySelectorAll("span"),
+            ...document.querySelectorAll("div")
+        ].filter(el => el.textContent.trim().toUpperCase() === "LẤY MÃ");
 
         if (getCodeButtons.length > 0) {
             getCodeButtons[0].click();
             console.log("%c[Konmeo Hub] ✅ Đã tự động click nút 'LẤY MÃ'", "color: lime; font-weight: bold;");
         } else {
-            console.log("%c[Konmeo Hub] ⚠️ Không tìm thấy nút 'LẤY MÃ'", "color: orange;");
+            console.log("%c[Konmeo Hub] ❗ Không tìm thấy nút, có thể tự bấm nút nếu có!", "color: yellow; font-weight: bold;");
         }
 
         // Tự động tìm mã "Mã KM: abcxyz"
-        const checkCode = setInterval(function () {
+        const checkCode = setInterval(() => {
             if (foundCode) return;
-
             const divs = document.querySelectorAll("div");
             divs.forEach(div => {
                 const txt = div.textContent.trim();
