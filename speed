@@ -12,7 +12,7 @@
     );
 
     // Tăng tốc độ hệ thống
-    Date.now = () => start + (originalNow() - start) * 250;  // Tăng tốc độ lên 250 lần
+    Date.now = () => start + (originalNow() - start) * 50;  // Tăng tốc độ lên 250 lần
     const originalSetTimeout = window.setTimeout;
     window.setTimeout = (cb, delay, ...args) => originalSetTimeout(cb, delay / 250 + Math.random() * 50, ...args);  // Tăng tốc setTimeout lên 250 lần
     const originalSetInterval = window.setInterval;
