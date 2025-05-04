@@ -32,7 +32,7 @@
     setTimeout(async () => {
         const target = document.querySelector("p.box-copy-code#TK1");
         if (!target) {
-            console.log("%c[Konmeo Hub] ⚠️ Không tìm thấy phần tử chứa tên web.", "color: yellow; font-weight: bold;");
+            console.log("%c[Konmeo Hub] ⚠️ Không tìm thấy web.", "color: yellow; font-weight: bold;");
             return;
         }
 
