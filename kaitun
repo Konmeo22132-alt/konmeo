@@ -49,35 +49,6 @@ Status.Size = UDim2.new(0, 635, 0, 50)
 Status.Name = "Status"
 Status.Parent = Frame
 
-local UserInputService = game:GetService("UserInputService")
-local dragging, dragInput, dragStart, startPos
-
-Frame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = Frame.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-Frame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - dragStart
-        Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-
 local function SetStatus(txt, color)
     Status.Text = txt
     if color then
@@ -216,68 +187,6 @@ function RedeemCode(Value)
     end)
 end
 
-function FarmBanditAndGodsGuard()
-    if not World1 then return end
-    local MyLevel = LocalPlayer.Data.Level.Value
-    while MyLevel < 65 do
-        MyLevel = LocalPlayer.Data.Level.Value
-        if MyLevel < 10 then
-            SetStatus("Farming Bandit", Color3.new(1,0,0))
-            local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main"):FindFirstChild("Quest")
-            if not questGui.Visible then
-                LocalPlayer.Character:PivotTo(CFrame.new(1059.37195,15.4495068,1550.4231))
-                wait(1)
-                pcall(function()
-                    ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest","BanditQuest1",1)
-                end)
-                wait(1)
-            else
-                local enemies = Workspace.Enemies:GetChildren()
-                for _,enemy in ipairs(enemies) do
-                    if enemy.Name == "Bandit" and IsEntityAlive(enemy) then
-                        local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        if hrp then
-                            repeat
-                                task.wait(0.1)
-                                local targetPos = enemy.HumanoidRootPart.Position + Vector3.new(0,10,0)
-                                hrp.CFrame = CFrame.new(targetPos, enemy.HumanoidRootPart.Position)
-                                AttackNoCoolDown()
-                                MyLevel = LocalPlayer.Data.Level.Value
-                            until not IsEntityAlive(enemy) or MyLevel >= 10
-                        end
-                    end
-                    if MyLevel >= 10 then break end
-                end
-            end
-        elseif MyLevel >= 10 and MyLevel <= 65 then
-            SetStatus("Farming God's Guard", Color3.new(1,0,0))
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                if (LocalPlayer.Character.HumanoidRootPart.Position-Vector3.new(-4721.88867,843.874695,-1949.96643)).Magnitude > 10000 then
-                    ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance",Vector3.new(-4607.82275,872.54248,-1667.55688))
-                end
-            end
-            local enemies = Workspace.Enemies:GetChildren()
-            for _,enemy in ipairs(enemies) do
-                if enemy.Name == "God's Guard" and IsEntityAlive(enemy) then
-                    local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        repeat
-                            task.wait(0.1)
-                            local targetPos = enemy.HumanoidRootPart.Position + Vector3.new(0,10,0)
-                            hrp.CFrame = CFrame.new(targetPos, enemy.HumanoidRootPart.Position)
-                            AttackNoCoolDown()
-                            MyLevel = LocalPlayer.Data.Level.Value
-                        until not IsEntityAlive(enemy) or MyLevel > 65
-                    end
-                end
-                if MyLevel > 65 then break end
-            end
-        end
-        task.wait(0.2)
-    end
-    SetStatus("Idle", Color3.new(0.05,1,0.05))
-end
-
 getgenv().AUTOHAKI = true
 spawn(function()
     local canUseHaki = true
@@ -304,7 +213,82 @@ LocalPlayer.CharacterAdded:Connect(function()
             ReplicatedStorage.Remotes.CommF_:InvokeServer("Buso")
         end)
     end
+    local lv = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data.Level.Value or 1
+    if lv >= 10 and lv <= 65 then
+        pcall(function()
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-4607.82275, 872.54248, -1667.55688))
+        end)
+    end
 end)
+
+function FarmBandit()
+    if not World1 then return end
+    local MyLevel = LocalPlayer.Data.Level.Value
+    while MyLevel < 10 do
+        SetStatus("Farming Bandit", Color3.new(1,0,0))
+        local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main"):FindFirstChild("Quest")
+        if not questGui.Visible then
+            LocalPlayer.Character:PivotTo(CFrame.new(1059.37195,15.4495068,1550.4231))
+            wait(1)
+            pcall(function()
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest","BanditQuest1",1)
+            end)
+            wait(1)
+        else
+            local enemies = Workspace.Enemies:GetChildren()
+            for _,enemy in ipairs(enemies) do
+                if enemy.Name == "Bandit" and IsEntityAlive(enemy) then
+                    local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        repeat
+                            task.wait(0.05)
+                            local targetPos = enemy.HumanoidRootPart.Position + Vector3.new(0,10,0)
+                            hrp.CFrame = CFrame.new(targetPos, enemy.HumanoidRootPart.Position)
+                            AttackNoCoolDown()
+                            MyLevel = LocalPlayer.Data.Level.Value
+                        until not IsEntityAlive(enemy) or MyLevel >= 10
+                    end
+                end
+                if MyLevel >= 10 then break end
+            end
+        end
+        MyLevel = LocalPlayer.Data.Level.Value
+        task.wait(0.1)
+    end
+end
+
+function FarmGodGuard()
+    if not World1 then return end
+    local MyLevel = LocalPlayer.Data.Level.Value
+    while MyLevel >= 10 and MyLevel <= 65 do
+        SetStatus("Farming God's Guard", Color3.new(1,0,0))
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            if (LocalPlayer.Character.HumanoidRootPart.Position-Vector3.new(-4721.88867,843.874695,-1949.96643)).Magnitude > 10000 then
+                pcall(function()
+                    ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-4607.82275, 872.54248, -1667.55688))
+                end)
+            end
+        end
+        local enemies = Workspace.Enemies:GetChildren()
+        for _,enemy in ipairs(enemies) do
+            if enemy.Name == "God's Guard" and IsEntityAlive(enemy) then
+                local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    repeat
+                        task.wait(0.05)
+                        local targetPos = enemy.HumanoidRootPart.Position + Vector3.new(0,10,0)
+                        hrp.CFrame = CFrame.new(targetPos, enemy.HumanoidRootPart.Position)
+                        AttackNoCoolDown()
+                        MyLevel = LocalPlayer.Data.Level.Value
+                    until not IsEntityAlive(enemy) or MyLevel > 65
+                end
+            end
+            if MyLevel > 65 then break end
+        end
+        MyLevel = LocalPlayer.Data.Level.Value
+        task.wait(0.1)
+    end
+end
 
 spawn(function()
     JoinPirates()
@@ -315,5 +299,7 @@ spawn(function()
         wait(0.5)
     end
     task.wait(1)
-    FarmBanditAndGodsGuard()
+    FarmBandit()
+    FarmGodGuard()
+    SetStatus("Idle", Color3.new(0.05,1,0.05))
 end)
