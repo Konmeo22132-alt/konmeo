@@ -1,6 +1,11 @@
-local player = game.Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+repeat task.wait() until game:IsLoaded() and game.Players.LocalPlayer
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+local playerGui = LocalPlayer:WaitForChild("PlayerGui")
 
+-- UI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "HuneUI"
 screenGui.ResetOnSpawn = false
@@ -74,8 +79,8 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
-local function SetStatus(text, color)
-    Status.Text = text
+local function SetStatus(txt, color)
+    Status.Text = txt
     if color then
         Status.TextColor3 = color
     end
@@ -88,8 +93,8 @@ local function IsEntityAlive(entity)
 end
 
 local function GetEnemiesInRange(character, range)
-    local enemies = game:GetService("Workspace").Enemies:GetChildren()
-    local players = game:GetService("Players"):GetPlayers()
+    local enemies = Workspace.Enemies:GetChildren()
+    local players = Players:GetPlayers()
     local targets = {}
     local playerPos = character:GetPivot().Position
     for _, enemy in ipairs(enemies) do
@@ -102,7 +107,7 @@ local function GetEnemiesInRange(character, range)
         end
     end
     for _, otherPlayer in ipairs(players) do
-        if otherPlayer ~= player and otherPlayer.Character then
+        if otherPlayer ~= LocalPlayer and otherPlayer.Character then
             local rootPart = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
             if rootPart and IsEntityAlive(otherPlayer.Character) then
                 local distance = (rootPart.Position - playerPos).Magnitude
@@ -116,7 +121,7 @@ local function GetEnemiesInRange(character, range)
 end
 
 function AttackNoCoolDown()
-    local character = player.Character
+    local character = LocalPlayer.Character
     if not character then return end
     local equippedWeapon
     for _, item in ipairs(character:GetChildren()) do
@@ -149,9 +154,8 @@ function AttackNoCoolDown()
             end
         end
         if mainTarget then
-            local storage = game:GetService("ReplicatedStorage")
-            local attackEvent = storage:WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RE/RegisterAttack")
-            local hitEvent = storage:WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RE/RegisterHit")
+            local attackEvent = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RE/RegisterAttack")
+            local hitEvent = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RE/RegisterHit")
             pcall(function()
                 attackEvent:FireServer(0.1)
                 hitEvent:FireServer(mainTarget, targets)
@@ -190,97 +194,95 @@ spawn(function()
                 [2] = "Melee",
                 [3] = 3
             }
-            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(v741))
+            ReplicatedStorage.Remotes.CommF_:InvokeServer(unpack(v741))
+        end
+    end
+end)
+
+function JoinPirates()
+    pcall(function()
+        ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
+    end)
+end
+
+local code = {
+    "WildDares","BossBuild","GetPranked","Sub2OfficialNoobie","Sub2Daigrock",
+    "Sub2NoobMaster123","Bluxxy","JCWK","Enyu_is_Pro","Sub2Fer999","kittgaming",
+    "TheGreatAce","StrawHatMaine","TantaiGaming","Axiore","SUB2GAMERROBOT_EXP1",
+    "MagicBus","StarcodeHEO","Sub2CaptainMaui","FIGHT4FRUIT","EARN_FRUITS"
+}
+function RedeemCode(Value)
+    pcall(function()
+        ReplicatedStorage.Remotes.Redeem:InvokeServer(Value)
+    end)
+end
+
+function FarmBandit()
+    local MyLevel = LocalPlayer.Data.Level.Value
+    if not World1 then return end
+    while MyLevel < 10 do
+        SetStatus("Farming Bandit", Color3.new(1,0,0))
+        local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main"):FindFirstChild("Quest")
+        if not questGui.Visible then
+            LocalPlayer.Character:PivotTo(CFrame.new(1059.37195,15.4495068,1550.4231))
+            wait(1)
+            pcall(function()
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest","BanditQuest1",1)
+            end)
+            wait(1)
+        else
+            local enemies = Workspace.Enemies:GetChildren()
+            for _,enemy in ipairs(enemies) do
+                if enemy.Name == "Bandit" and IsEntityAlive(enemy) then
+                    local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        local targetPos = enemy.HumanoidRootPart.Position + Vector3.new(0,10,0)
+                        hrp.CFrame = CFrame.new(targetPos, enemy.HumanoidRootPart.Position)
+                        repeat
+                            task.wait(0.1)
+                            local targetPos2 = enemy.HumanoidRootPart.Position + Vector3.new(0,10,0)
+                            hrp.CFrame = CFrame.new(targetPos2, enemy.HumanoidRootPart.Position)
+                            AttackNoCoolDown()
+                            MyLevel = LocalPlayer.Data.Level.Value
+                        until not IsEntityAlive(enemy) or MyLevel >= 10
+                    end
+                end
+                if MyLevel >= 10 then break end
+            end
+        end
+        MyLevel = LocalPlayer.Data.Level.Value
+        task.wait(0.2)
+    end
+    SetStatus("Idle", Color3.new(0.05,1,0.05))
+end
+
+getgenv().AUTOHAKI = true
+spawn(function()
+    local canUseHaki = true
+    local debounceTime = 2
+    while task.wait(0.1) do
+        if getgenv().AUTOHAKI then
+            if not LocalPlayer.Character:FindFirstChild("HasBuso") and canUseHaki then
+                canUseHaki = false
+                local args = { [1] = "Buso" }
+                pcall(function()
+                    ReplicatedStorage.Remotes.CommF_:InvokeServer(unpack(args))
+                end)
+                wait(debounceTime)
+                canUseHaki = true
+            end
         end
     end
 end)
 
 spawn(function()
-    SetStatus("Joining Team...", Color3.new(1,1,0))
-    pcall(function()
-        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam","Pirates")
-    end)
-    wait(0.5)
-    getgenv().AUTOHAKI = true
-    spawn(function()
-        local canUseHaki = true
-        local debounceTime = 2
-        while task.wait(0.1) do
-            if getgenv().AUTOHAKI then
-                if not game.Players.LocalPlayer.Character:FindFirstChild("HasBuso") and canUseHaki then
-                    canUseHaki = false
-                    local args = {
-                        [1] = "Buso"
-                    }
-                    pcall(function()
-                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
-                    end)
-                    wait(debounceTime)
-                    canUseHaki = true
-                end
-            end
-        end
-    end)
-    wait(0.5)
-    SetStatus("Redeem Code...", Color3.new(0,1,1))
-    local code = {
-        "WildDares","BossBuild","GetPranked","Sub2OfficialNoobie","Sub2Daigrock",
-        "Sub2NoobMaster123","Bluxxy","JCWK","Enyu_is_Pro","Sub2Fer999","kittgaming",
-        "TheGreatAce","StrawHatMaine","TantaiGaming","Axiore","SUB2GAMERROBOT_EXP1",
-        "MagicBus","StarcodeHEO","Sub2CaptainMaui","FIGHT4FRUIT","EARN_FRUITS"
-    }
-    function RedeemCode(Value)
-        game:GetService("ReplicatedStorage").Remotes.Redeem:InvokeServer(Value)
-    end
-    local delayBetweenRequests = 0.5
+    JoinPirates()
+    task.wait(0.5)
     for i,v in pairs(code) do
-        spawn(function()
-            RedeemCode(v)
-            wait(delayBetweenRequests)
-        end)
+        SetStatus("Redeem Code...", Color3.new(0,1,1))
+        RedeemCode(v)
+        wait(0.5)
     end
-    wait(3)
-    if World1 then
-        local MyLevel = game:GetService("Players").LocalPlayer.Data.Level.Value
-        if MyLevel >= 1 and MyLevel <= 9 then
-            local Mon = "Bandit"
-            local LevelQuest = 1
-            local NameQuest = "BanditQuest1"
-            local NameMon = "Bandit"
-            local CFrameQuest = CFrame.new(1059.37195, 15.4495068, 1550.4231)
-            local CFrameMon = CFrame.new(1045.962646484375, 27.00250816345215, 1560.8203125)
-            while task.wait() do
-                MyLevel = game:GetService("Players").LocalPlayer.Data.Level.Value
-                if MyLevel >= 10 then
-                    SetStatus("Idle", Color3.new(0.05,1,0.05))
-                    break
-                end
-                SetStatus("Farming "..Mon, Color3.new(1,0,0))
-                local questCheck = player.PlayerGui:FindFirstChild("Main"):FindFirstChild("Quest")
-                if not questCheck.Visible then
-                    player.Character:PivotTo(CFrameQuest)
-                    wait(1)
-                    pcall(function()
-                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest",NameQuest,LevelQuest)
-                    end)
-                    wait(1)
-                else
-                    local enemies = Workspace.Enemies:GetChildren()
-                    for _,enemy in ipairs(enemies) do
-                        if enemy.Name == NameMon and IsEntityAlive(enemy) then
-                            local root = enemy:FindFirstChild("HumanoidRootPart")
-                            if root and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                                player.Character:PivotTo(CFrame.new(root.Position.X, root.Position.Y+3, root.Position.Z))
-                                repeat
-                                    task.wait(0.1)
-                                    AttackNoCoolDown()
-                                until not IsEntityAlive(enemy) or MyLevel >= 10
-                            end
-                        end
-                        if MyLevel >= 10 then break end
-                    end
-                end
-            end
-        end
-    end
+    task.wait(1)
+    FarmBandit()
 end)
