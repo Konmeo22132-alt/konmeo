@@ -1,9 +1,62 @@
 repeat task.wait() until game:IsLoaded() and game.Players.LocalPlayer
 local player = game.Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 local placeId = game.PlaceId
-local status = "Idle"
-getgenv().StartMagnet = true
-getgenv().AUTOHAKI = true
+local StatusValue = "Idle"
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "HuneUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+local Frame = Instance.new("Frame")
+Frame.BackgroundColor3 = Color3.new(0.278, 0.278, 0.278)
+Frame.BackgroundTransparency = 0.5
+Frame.BorderSizePixel = 0
+Frame.Position = UDim2.new(0.1, 0, 0.05, 0)
+Frame.Size = UDim2.new(0, 799, 0, 95)
+Frame.Parent = screenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 25)
+UICorner.Parent = Frame
+
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.new(0.21, 1, 0.15)
+UIStroke.Thickness = 5
+UIStroke.Parent = Frame
+
+local Title = Instance.new("TextLabel")
+Title.Font = Enum.Font.SourceSansBold
+Title.Text = "HuneIPA - BLOX FRUIT KAITUN SCRIPT"
+Title.TextColor3 = Color3.new(0.05, 1, 0.05)
+Title.TextSize = 30
+Title.BackgroundTransparency = 1
+Title.Position = UDim2.new(0.38, 0, -0.08, 0)
+Title.Size = UDim2.new(0, 400, 0, 50)
+Title.Name = "Title"
+Title.Parent = Frame
+
+local Status = Instance.new("TextLabel")
+Status.Font = Enum.Font.SourceSansBold
+Status.Text = StatusValue
+Status.TextColor3 = Color3.new(0.05, 1, 0.05)
+Status.TextSize = 50
+Status.BackgroundTransparency = 1
+Status.Position = UDim2.new(0.1, 0, 0.3, 0)
+Status.Size = UDim2.new(0, 635, 0, 50)
+Status.Name = "Status"
+Status.Parent = Frame
+
+local function UpdateStatus(text, color)
+    Status.Text = text
+    Status.TextColor3 = color or Color3.new(0.05, 1, 0.05)
+end
+
+local function JoinTeam()
+    local args = {[1] = "SetTeam",[2] = "Pirates"}
+    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+end
 
 local function IsEntityAlive(entity)
     if not entity then return false end
@@ -13,7 +66,6 @@ end
 
 local function GetEnemiesInRange(character, range)
     local enemies = game:GetService("Workspace").Enemies:GetChildren()
-    local players = game:GetService("Players"):GetPlayers()
     local targets = {}
     local playerPos = character:GetPivot().Position
     for _, enemy in ipairs(enemies) do
@@ -22,17 +74,6 @@ local function GetEnemiesInRange(character, range)
             local distance = (rootPart.Position - playerPos).Magnitude
             if distance <= range then
                 table.insert(targets, enemy)
-            end
-        end
-    end
-    for _, otherPlayer in ipairs(players) do
-        if otherPlayer ~= player and otherPlayer.Character then
-            local rootPart = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if rootPart and IsEntityAlive(otherPlayer.Character) then
-                local distance = (rootPart.Position - playerPos).Magnitude
-                if distance <= range then
-                    table.insert(targets, otherPlayer.Character)
-                end
             end
         end
     end
@@ -52,7 +93,7 @@ function AttackNoCoolDown()
     if not equippedWeapon then return end
     local enemiesInRange = GetEnemiesInRange(character, 60)
     if equippedWeapon:FindFirstChild("LeftClickRemote") then
-        local attackCount = 1
+        local attackCount = 1  
         for _, enemy in ipairs(enemiesInRange) do
             local rootPart = enemy:FindFirstChild("HumanoidRootPart")
             if rootPart then
@@ -89,149 +130,131 @@ local function AutoStatMelee()
 end
 
 spawn(function()
-    while wait() do
+    while task.wait(0.5) do
         if AutoStatMelee() then
-            local v741 = {
-                [1] = "AddPoint",
-                [2] = "Melee",
-                [3] = 3
-            };
-            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(v741));
+            local v741 = {[1] = "AddPoint",[2] = "Melee",[3] = 3}
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(v741))
         end
     end
 end)
 
-local function JoinTeam()
-    local args = {
-        [1] = "SetTeam",
-        [2] = "Pirates"
-    }
-    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
-end
+local Mon = "Bandit"
+local LevelQuest = 1
+local NameQuest = "BanditQuest1"
+local NameMon = "Bandit"
+local CFrameQuest = CFrame.new(1059.37195, 15.4495068, 1550.4231)
+local CFrameMon = CFrame.new(1045.9626, 27.0025, 1560.8203)
 
-JoinTeam()
-
-local worldMap = {
-    [2753915549] = true,
-    [4442272183] = true,
-    [7449423635] = true
-}
-if worldMap[placeId] then
-    if placeId == 2753915549 then
-        World1 = true
-    elseif placeId == 4442272183 then
-        World2 = true
-    elseif placeId == 7449423635 then
-        World3 = true
-    end
-end
-
-spawn(function()
-    local canUseHaki = true
-    local debounceTime = 2
-    wait(0.5)
-    while task.wait(0.1) do
-        if getgenv().AUTOHAKI then
-            if not game.Players.LocalPlayer.Character:FindFirstChild("HasBuso") and canUseHaki then
-                canUseHaki = false
-                local args = {
-                    [1] = "Buso"
-                }
-                pcall(function()
-                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
-                end)
-                wait(debounceTime)
-                canUseHaki = true
-            end
-        end
-    end
-end)
-
-task.wait(0.5)
-status = "Redeem code..."
-local code = {
-    "WildDares",
-    "BossBuild",
-    "GetPranked",
-    "Sub2OfficialNoobie",
-    "Sub2Daigrock",
-    "Sub2NoobMaster123",
-    "Bluxxy",
-    "JCWK",
-    "Enyu_is_Pro",
-    "Sub2Fer999",
-    "kittgaming",
-    "TheGreatAce",
-    "StrawHatMaine",
-    "TantaiGaming",
-    "Axiore",
-    "SUB2GAMERROBOT_EXP1",
-    "MagicBus",
-    "StarcodeHEO",
-    "Sub2CaptainMaui",
-    "FIGHT4FRUIT",
-    "EARN_FRUITS",
-}
-function RedeemCode(Value)
-    game:GetService("ReplicatedStorage").Remotes.Redeem:InvokeServer(Value)
-end
-local delayBetweenRequests = 0.5
-for i, v in pairs(code) do
-    spawn(function()
-        RedeemCode(v)
-        wait(delayBetweenRequests)
-    end)
-end
-
-task.wait(1)
-local MyLevel = player.Data.Level.Value
-if World1 then
-    if MyLevel >= 1 and MyLevel <= 9 then
+local function CheckQuest()
+    local myLevel = player.Data.Level.Value
+    if myLevel >= 1 and myLevel <= 9 then
         Mon = "Bandit"
         LevelQuest = 1
         NameQuest = "BanditQuest1"
         NameMon = "Bandit"
-        CFrameQuest = CFrame.new(1059.37195, 15.4495068, 1550.4231, 0.939700544, -0, -0.341998369, 0, 1, -0, 0.341998369, 0, 0.939700544)
-        CFrameMon = CFrame.new(1045.962646484375, 27.00250816345215, 1560.8203125)
-        status = "Farming Bandit"
+        CFrameQuest = CFrame.new(1059.37195, 15.4495068, 1550.4231)
+        CFrameMon = CFrame.new(1045.9626, 27.0025, 1560.8203)
     end
 end
 
-spawn(function()
-    while task.wait(0.1) do
-        pcall(function()
-            local enemies = game.Workspace.Enemies:GetChildren()
-            local MonsterCount = 0
-            for _, enemy in ipairs(enemies) do
-                if MonsterCount >= 2 then
-                    break
+local function AutoFarmBandit()
+    spawn(function()
+        while task.wait(0.2) do
+            pcall(function()
+                if player.Data.Level.Value >= 10 then
+                    UpdateStatus("Finished Bandit Farm", Color3.new(0,1,0))
+                    return
                 end
-                if enemy:FindFirstChild("Humanoid") and enemy:FindFirstChild("HumanoidRootPart") then
-                    local humanoid = enemy:FindFirstChild("Humanoid")
-                    local rootPart = enemy:FindFirstChild("HumanoidRootPart")
-                    if humanoid and rootPart and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                        local distance = (rootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
-                        if getgenv().StartMagnet and (enemy.Name == Mon) and humanoid.Health > 0 and distance <= 350 then
-                            if (enemy.Name == Mon) and CFrameMon and (rootPart.Position - CFrameMon.Position).Magnitude <= 4500 then
-                                if rootPart.Parent then
-                                    rootPart.CanCollide = false
-                                    rootPart.Size = Vector3.new(60, 60, 60)
-                                    rootPart.CFrame = CFrameMon
-                                    enemy.Head.CanCollide = false
-                                    local animator = humanoid:FindFirstChild("Animator")
-                                    if animator then
-                                        pcall(function()
-                                            animator:Destroy()
-                                        end)
-                                    end
-                                    sethiddenproperty(player, "SimulationRadius", math.huge)
-                                    MonsterCount = MonsterCount + 1
+                CheckQuest()
+                local QuestCheck = player.PlayerGui:FindFirstChild("Main"):FindFirstChild("Quest")
+                if not QuestCheck or not QuestCheck.Visible then
+                    player.Character.HumanoidRootPart.CFrame = CFrameQuest
+                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", NameQuest, LevelQuest)
+                else
+                    local enemies = game:GetService("Workspace").Enemies:GetChildren()
+                    for _, enemy in ipairs(enemies) do
+                        if enemy.Name == Mon and enemy:FindFirstChild("HumanoidRootPart") and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
+                            player.Character.HumanoidRootPart.CFrame = enemy.HumanoidRootPart.CFrame * CFrame.new(0,10,0)
+                            AttackNoCoolDown()
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+end
+
+local function BringMob()
+    spawn(function()
+        while task.wait(0.1) do
+            pcall(function()
+                local enemies = game:GetService("Workspace").Enemies:GetChildren()
+                local MonsterCount = 0
+                for _, enemy in ipairs(enemies) do
+                    if MonsterCount >= 2 then break end
+                    if enemy:FindFirstChild("Humanoid") and enemy:FindFirstChild("HumanoidRootPart") then
+                        local humanoid = enemy:FindFirstChild("Humanoid")
+                        local rootPart = enemy:FindFirstChild("HumanoidRootPart")
+                        if humanoid and rootPart and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                            local distance = (rootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                            if enemy.Name == Mon and humanoid.Health > 0 and distance <= 350 then
+                                rootPart.CanCollide = false
+                                rootPart.Size = Vector3.new(60, 60, 60)
+                                rootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,-5)
+                                enemy.Head.CanCollide = false
+                                local animator = humanoid:FindFirstChild("Animator")
+                                if animator then
+                                    pcall(function() animator:Destroy() end)
                                 end
+                                sethiddenproperty(player, "SimulationRadius", math.huge)
+                                MonsterCount = MonsterCount + 1
                             end
                         end
                     end
                 end
-            end
+            end)
+        end
+    end)
+end
+
+local function RedeemAllCodes()
+    UpdateStatus("Redeem code...", Color3.new(1,1,0))
+    local codes = {
+        "WildDares","BossBuild","GetPranked","Sub2OfficialNoobie","Sub2Daigrock","Sub2NoobMaster123","Bluxxy","JCWK","Enyu_is_Pro","Sub2Fer999","kittgaming","TheGreatAce","StrawHatMaine","TantaiGaming","Axiore","SUB2GAMERROBOT_EXP1","MagicBus","StarcodeHEO","Sub2CaptainMaui","FIGHT4FRUIT","EARN_FRUITS"
+    }
+    local delayBetweenRequests = 0.5
+    for i, v in pairs(codes) do
+        pcall(function()
+            game:GetService("ReplicatedStorage").Remotes.Redeem:InvokeServer(v)
         end)
+        wait(delayBetweenRequests)
     end
+end
+
+spawn(function()
+    JoinTeam()
+    task.wait(0.5)
+    getgenv().AUTOHAKI = true
+    spawn(function()
+        local canUseHaki = true
+        local debounceTime = 2
+        while task.wait(0.1) do
+            if getgenv().AUTOHAKI then
+                if not player.Character:FindFirstChild("HasBuso") and canUseHaki then
+                    canUseHaki = false
+                    local args = {[1] = "Buso"}
+                    pcall(function()
+                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+                    end)
+                    wait(debounceTime)
+                    canUseHaki = true
+                end
+            end
+        end
+    end)
+    RedeemAllCodes()
+    task.wait(1)
+    UpdateStatus("Farming Bandit", Color3.new(1,0,0))
+    BringMob()
+    AutoFarmBandit()
 end)
