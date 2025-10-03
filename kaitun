@@ -5,7 +5,6 @@ local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 local playerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- UI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "HuneUI"
 screenGui.ResetOnSpawn = false
@@ -218,8 +217,8 @@ function RedeemCode(Value)
 end
 
 function FarmBandit()
-    local MyLevel = LocalPlayer.Data.Level.Value
     if not World1 then return end
+    local MyLevel = LocalPlayer.Data.Level.Value
     while MyLevel < 10 do
         SetStatus("Farming Bandit", Color3.new(1,0,0))
         local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main"):FindFirstChild("Quest")
@@ -236,12 +235,10 @@ function FarmBandit()
                 if enemy.Name == "Bandit" and IsEntityAlive(enemy) then
                     local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                     if hrp then
-                        local targetPos = enemy.HumanoidRootPart.Position + Vector3.new(0,10,0)
-                        hrp.CFrame = CFrame.new(targetPos, enemy.HumanoidRootPart.Position)
                         repeat
                             task.wait(0.1)
-                            local targetPos2 = enemy.HumanoidRootPart.Position + Vector3.new(0,10,0)
-                            hrp.CFrame = CFrame.new(targetPos2, enemy.HumanoidRootPart.Position)
+                            local targetPos = enemy.HumanoidRootPart.Position + Vector3.new(0,10,0)
+                            hrp.CFrame = CFrame.new(targetPos, enemy.HumanoidRootPart.Position)
                             AttackNoCoolDown()
                             MyLevel = LocalPlayer.Data.Level.Value
                         until not IsEntityAlive(enemy) or MyLevel >= 10
