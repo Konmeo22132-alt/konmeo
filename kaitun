@@ -127,9 +127,9 @@ local function GetEnemiesInRange(character, range)
     return targets
 end
 
-function AttackNoCoolDown()
+function AttackNoCoolDown(enemy)
     local character = LocalPlayer.Character
-    if not character then return end
+    if not character or not enemy or not IsEntityAlive(enemy) then return end
     local equippedWeapon
     for _, item in ipairs(character:GetChildren()) do
         if item:IsA("Tool") then
@@ -138,44 +138,22 @@ function AttackNoCoolDown()
         end
     end
     if not equippedWeapon then return end
-    local enemiesInRange = GetEnemiesInRange(character, 60)
+    local rootPart = enemy:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
     if equippedWeapon:FindFirstChild("LeftClickRemote") then
-        local attackCount = 1
-        for _, enemy in ipairs(enemiesInRange) do
-            if enemy and enemy.Parent and enemy:FindFirstChild("HumanoidRootPart") then
-                local direction = (enemy.HumanoidRootPart.Position - character:GetPivot().Position).Unit
-                pcall(function()
-                    equippedWeapon.LeftClickRemote:FireServer(direction, attackCount)
-                end)
-                attackCount = attackCount + 1
-            end
-        end
+        local direction = (rootPart.Position - character:GetPivot().Position).Unit
+        pcall(function()
+            equippedWeapon.LeftClickRemote:FireServer(direction, 1)
+        end)
     else
-        local targets, mainTarget = {}, nil
-        for _, enemy in ipairs(enemiesInRange) do
-            if enemy and enemy.Parent and not enemy:GetAttribute("IsBoat") then
-                local head = enemy:FindFirstChild("Head")
-                if head then
-                    table.insert(targets, { enemy, head })
-                    mainTarget = head
-                end
-            end
-        end
-        if mainTarget then
-            local attackEvent = ReplicatedStorage:FindFirstChild("Modules")
-                and ReplicatedStorage.Modules:FindFirstChild("Net")
-                and ReplicatedStorage.Modules.Net:FindFirstChild("RE")
-                and ReplicatedStorage.Modules.Net.RE:FindFirstChild("RegisterAttack")
-            local hitEvent = ReplicatedStorage:FindFirstChild("Modules")
-                and ReplicatedStorage.Modules:FindFirstChild("Net")
-                and ReplicatedStorage.Modules.Net:FindFirstChild("RE")
-                and ReplicatedStorage.Modules.Net.RE:FindFirstChild("RegisterHit")
-            if attackEvent and hitEvent then
-                pcall(function()
-                    attackEvent:FireServer(0.1)
-                    hitEvent:FireServer(mainTarget, targets)
-                end)
-            end
+        local head = enemy:FindFirstChild("Head")
+        if head then
+            local attackEvent = ReplicatedStorage.Modules.Net.RE.RegisterAttack
+            local hitEvent = ReplicatedStorage.Modules.Net.RE.RegisterHit
+            pcall(function()
+                attackEvent:FireServer(0.1)
+                hitEvent:FireServer(rootPart, { {enemy, head} })
+            end)
         end
     end
 end
@@ -269,7 +247,7 @@ function FarmBandit()
                     if not IsEntityAlive(target) or not target:FindFirstChild("HumanoidRootPart") then break end
                     task.wait(0.05)
                     HoverAbove(target)
-                    AttackNoCoolDown()
+                    AttackNoCoolDown(target)
                     MyLevel = LocalPlayer.Data.Level.Value
                 until not IsEntityAlive(target) or MyLevel >= 10
             else
@@ -308,7 +286,7 @@ function FarmGodGuard()
                 if not IsEntityAlive(target) or not target:FindFirstChild("HumanoidRootPart") then break end
                 task.wait(0.05)
                 HoverAbove(target)
-                AttackNoCoolDown()
+                AttackNoCoolDown(target)
                 MyLevel = LocalPlayer.Data.Level.Value
             until not IsEntityAlive(target) or MyLevel > 65
         else
