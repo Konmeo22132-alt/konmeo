@@ -280,12 +280,81 @@ local function NearestEnemyByPrefix(prefix)
     return nearest
 end
 
-function FarmBandit()
+function FarmDesert1()
     if not World1 then return end
     EnableNoClip()
     local MyLevel = LocalPlayer.Data.Level.Value
-    while MyLevel < 10 do
-        SetStatus("Farming Bandit", Color3.new(1,0,0))
+    while MyLevel >= 66 and MyLevel <= 74 do
+        SetStatus("Farming Desert Bandit", Color3.new(1, 0.7, 0))
+        if not SafeQuestVisible() then
+            local chrp = SafeHRP()
+            if chrp then
+                LocalPlayer.Character:PivotTo(CFrame.new(894.488647, 5.14000702, 4392.43359))
+            end
+            task.wait(1)
+            pcall(function()
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", "DesertQuest", 1)
+            end)
+            task.wait(1)
+        else
+            local target = NearestEnemyByPrefix("Desert Bandit")
+            if target then
+                StartHoverOnTarget(target)
+                repeat
+                    if not IsEntityAlive(target) or not target:FindFirstChild("HumanoidRootPart") then break end
+                    task.wait(0.05)
+                    MyLevel = LocalPlayer.Data.Level.Value
+                until not IsEntityAlive(target) or MyLevel > 74
+                StopHover()
+            else
+                -- Nếu không tìm thấy kẻ địch gần, di chuyển đến khu spawn Desert Bandit
+                LocalPlayer.Character:PivotTo(CFrame.new(924.7998046875, 6.44867467880249, 4481.5859375))
+                task.wait(0.5)
+            end
+        end
+        MyLevel = LocalPlayer.Data.Level.Value
+        task.wait(0.1)
+    end
+    DisableNoClip()
+end
+
+
+function FarmGodGuard()
+    if not World1 then return end
+    EnableNoClip()
+    local MyLevel = LocalPlayer.Data.Level.Value
+    local hrp = SafeHRP()
+    if hrp then
+        pcall(function()
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-4607.82275,872.54248,-1667.55688))
+        end)
+    end
+    while MyLevel >= 10 and MyLevel <= 65 do
+        SetStatus("Farming God's Guard", Color3.new(1,0,0))
+        local target = NearestEnemyByPrefix("God's Guard")
+        if target then
+            StartHoverOnTarget(target)
+            repeat
+                if not IsEntityAlive(target) or not target:FindFirstChild("HumanoidRootPart") then break end
+                task.wait(0.05)
+                MyLevel = LocalPlayer.Data.Level.Value
+            until not IsEntityAlive(target) or MyLevel > 65
+            StopHover()
+        else
+            task.wait(0.2)
+        end
+        MyLevel = LocalPlayer.Data.Level.Value
+        task.wait(0.1)
+    end
+    DisableNoClip()
+end
+
+function FarmDesert1()
+if not World1 then return end
+    EnableNoClip()
+    local MyLevel = LocalPlayer.Data.Level.Value
+    while MyLevel >= 66 and MyLevel <74 do
+        SetStatus("Farming Level", Color3.new(1,0,0))
         if not SafeQuestVisible() then
             local chrp = SafeHRP()
             if chrp then
@@ -316,29 +385,38 @@ function FarmBandit()
     DisableNoClip()
 end
 
-function FarmGodGuard()
+function FarmDesert2()
     if not World1 then return end
     EnableNoClip()
     local MyLevel = LocalPlayer.Data.Level.Value
-    local hrp = SafeHRP()
-    if hrp then
-        pcall(function()
-            ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-4607.82275,872.54248,-1667.55688))
-        end)
-    end
-    while MyLevel >= 10 and MyLevel <= 65 do
-        SetStatus("Farming God's Guard", Color3.new(1,0,0))
-        local target = NearestEnemyByPrefix("God's Guard")
-        if target then
-            StartHoverOnTarget(target)
-            repeat
-                if not IsEntityAlive(target) or not target:FindFirstChild("HumanoidRootPart") then break end
-                task.wait(0.05)
-                MyLevel = LocalPlayer.Data.Level.Value
-            until not IsEntityAlive(target) or MyLevel > 65
-            StopHover()
+    while MyLevel >= 75 and MyLevel <= 89 do
+        SetStatus("Farming Desert Officer", Color3.new(1, 0.8, 0))
+        if not SafeQuestVisible() then
+            local chrp = SafeHRP()
+            if chrp then
+ 
+                LocalPlayer.Character:PivotTo(CFrame.new(894.488647, 5.14000702, 4392.43359))
+            end
+            task.wait(1)
+            pcall(function()
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", "DesertQuest", 2)
+            end)
+            task.wait(1)
         else
-            task.wait(0.2)
+            local target = NearestEnemyByPrefix("Desert Officer")
+            if target then
+                StartHoverOnTarget(target)
+                repeat
+                    if not IsEntityAlive(target) or not target:FindFirstChild("HumanoidRootPart") then break end
+                    task.wait(0.05)
+                    MyLevel = LocalPlayer.Data.Level.Value
+                until not IsEntityAlive(target) or MyLevel > 89
+                StopHover()
+            else
+ 
+                LocalPlayer.Character:PivotTo(CFrame.new(1608.2822265625, 8.614224433898926, 4371.00732421875))
+                task.wait(0.5)
+            end
         end
         MyLevel = LocalPlayer.Data.Level.Value
         task.wait(0.1)
@@ -405,5 +483,7 @@ spawn(function()
     task.wait(0.5)
     FarmBandit()
     FarmGodGuard()
-    SetStatus("Idle", Color3.new(0.05,1,0.05))
+    FarmDesert1()
+    FarmDesert2()
+    SetStatus("Waiting update...", Color3.new(0.05,1,0.05))
 end)
