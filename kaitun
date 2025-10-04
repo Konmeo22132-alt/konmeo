@@ -318,8 +318,9 @@ end
 
 function FarmGodGuard()
     if not World1 then return end
-    EnableNoClip()
     local MyLevel = LocalPlayer.Data.Level.Value
+    if MyLevel < 10 or MyLevel > 65 then return end
+    EnableNoClip()
     local hrp = SafeHRP()
     if hrp then
         pcall(function()
