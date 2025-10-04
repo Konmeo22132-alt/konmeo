@@ -96,8 +96,11 @@ local function MoveAbove(enemy)
     local targetHRP = enemy:FindFirstChild("HumanoidRootPart")
     if not targetHRP then return end
     hrp.CanCollide = false
-    local goal = CFrame.new(targetHRP.Position + Vector3.new(0,10,0), targetHRP.Position)
-    local tw = TweenService:Create(hrp, TweenInfo.new(0.12, Enum.EasingStyle.Linear), {CFrame = goal})
+    local targetPos = targetHRP.Position + Vector3.new(0,15,0)
+    local dist = (hrp.Position - targetPos).Magnitude
+    local duration = dist/300
+    local goal = CFrame.new(targetPos, targetHRP.Position)
+    local tw = TweenService:Create(hrp, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = goal})
     tw:Play()
 end
 
@@ -164,14 +167,8 @@ function AttackNoCoolDown()
             end
         end
         if mainTarget then
-            local attackEvent = ReplicatedStorage:FindFirstChild("Modules")
-                and ReplicatedStorage.Modules:FindFirstChild("Net")
-                and ReplicatedStorage.Modules.Net:FindFirstChild("RE")
-                and ReplicatedStorage.Modules.Net.RE:FindFirstChild("RegisterAttack")
-            local hitEvent = ReplicatedStorage:FindFirstChild("Modules")
-                and ReplicatedStorage.Modules:FindFirstChild("Net")
-                and ReplicatedStorage.Modules.Net:FindFirstChild("RE")
-                and ReplicatedStorage.Modules.Net.RE:FindFirstChild("RegisterHit")
+            local attackEvent = ReplicatedStorage.Modules.Net.RE.RegisterAttack
+            local hitEvent = ReplicatedStorage.Modules.Net.RE.RegisterHit
             if attackEvent and hitEvent then
                 pcall(function()
                     attackEvent:FireServer(0.1)
@@ -288,21 +285,13 @@ function FarmGodGuard()
     if not World1 then return end
     EnableNoClip()
     local MyLevel = LocalPlayer.Data.Level.Value
-    local hrp = SafeHRP()
-    if hrp then
-        pcall(function()
-            ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-4607.82275,872.54248,-1667.55688))
-        end)
-    end
     while MyLevel >= 10 and MyLevel <= 65 do
         SetStatus("Farming God's Guard", Color3.new(1,0,0))
         local h = SafeHRP()
-        if h then
-            if (h.Position-Vector3.new(-4721.88867,843.874695,-1949.96643)).Magnitude > 10000 then
-                pcall(function()
-                    ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-4607.82275,872.54248,-1667.55688))
-                end)
-            end
+        if h and (h.Position-Vector3.new(-4721.88867,843.874695,-1949.96643)).Magnitude > 10000 then
+            pcall(function()
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-4607.82275,872.54248,-1667.55688))
+            end)
         end
         local target = NearestEnemyByPrefix("God's Guard")
         if target then
@@ -350,23 +339,14 @@ LocalPlayer.CharacterAdded:Connect(function()
         end)
     end
     if not isRedeeming then
-        local lv = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data.Level.Value or 1
+        local lv = LocalPlayer.Data.Level.Value
         if lv < 10 then
             spawn(FarmBandit)
         elseif lv >= 10 and lv <= 65 then
-            pcall(function()
-                ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-4607.82275, 872.54248, -1667.55688))
-            end)
             spawn(FarmGodGuard)
         end
     end
 end)
-
-function JoinPirates()
-    pcall(function()
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
-    end)
-end
 
 spawn(function()
     JoinPirates()
