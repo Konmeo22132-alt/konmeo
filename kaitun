@@ -425,6 +425,80 @@ function FarmDesert2()
     DisableNoClip()
 end
 
+function FarmSnow1()
+    if not World1 then return end
+    EnableNoClip()
+    local MyLevel = LocalPlayer.Data.Level.Value
+    while MyLevel >= 90 and MyLevel <= 99 do
+        SetStatus("Farming Snow Bandit", Color3.new(0.8, 0.9, 1))
+        if not SafeQuestVisible() then
+            local chrp = SafeHRP()
+            if chrp then
+                LocalPlayer.Character:PivotTo(CFrame.new(1389.74451, 88.1519318, -1298.90796))
+            end
+            task.wait(1)
+            pcall(function()
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", "SnowQuest", 1)
+            end)
+            task.wait(1)
+        else
+            local target = NearestEnemyByPrefix("Snow Bandit")
+            if target then
+                StartHoverOnTarget(target)
+                repeat
+                    if not IsEntityAlive(target) or not target:FindFirstChild("HumanoidRootPart") then break end
+                    task.wait(0.05)
+                    MyLevel = LocalPlayer.Data.Level.Value
+                until not IsEntityAlive(target) or MyLevel > 99
+                StopHover()
+            else
+                LocalPlayer.Character:PivotTo(CFrame.new(1354.347900390625, 87.27277374267578, -1393.946533203125))
+                task.wait(0.5)
+            end
+        end
+        MyLevel = LocalPlayer.Data.Level.Value
+        task.wait(0.1)
+    end
+    DisableNoClip()
+end
+
+function FarmSnow2()
+    if not World1 then return end
+    EnableNoClip()
+    local MyLevel = LocalPlayer.Data.Level.Value
+    while MyLevel >= 100 and MyLevel <= 119 do
+        SetStatus("Farming Snowman", Color3.new(0.8, 0.9, 1))
+        if not SafeQuestVisible() then
+            local chrp = SafeHRP()
+            if chrp then
+                LocalPlayer.Character:PivotTo(CFrame.new(1389.74451, 88.1519318, -1298.90796))
+            end
+            task.wait(1)
+            pcall(function()
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", "SnowQuest", 2)
+            end)
+            task.wait(1)
+        else
+            local target = NearestEnemyByPrefix("Snowman")
+            if target then
+                StartHoverOnTarget(target)
+                repeat
+                    if not IsEntityAlive(target) or not target:FindFirstChild("HumanoidRootPart") then break end
+                    task.wait(0.05)
+                    MyLevel = LocalPlayer.Data.Level.Value
+                until not IsEntityAlive(target) or MyLevel > 119
+                StopHover()
+            else
+                LocalPlayer.Character:PivotTo(CFrame.new(1201.6412353515625, 144.57958984375, -1550.0670166015625))
+                task.wait(0.5)
+            end
+        end
+        MyLevel = LocalPlayer.Data.Level.Value
+        task.wait(0.1)
+    end
+    DisableNoClip()
+end
+
 getgenv().AUTOHAKI = true
 spawn(function()
     local canUseHaki = true
@@ -465,6 +539,10 @@ LocalPlayer.CharacterAdded:Connect(function()
             spawn(FarmDesert1)
         elseif lv >= 75 and lv <= 89 then
             spawn(FarmDesert2)
+        elseif lv >= 90 and lv <= 99 then
+            spawn(FarmSnow1)
+        elseif elseif lv >= 100 and lv <= 119 then
+            spawn(FarmSnow2)
         end
     end
 end)
@@ -490,6 +568,12 @@ spawn(function()
     FarmBandit()
     FarmGodGuard()
     FarmDesert1()
+    task.wait(3)
     FarmDesert2()
+    task.wait(3)
+    FarmSnow1()
+    task.wait(3)
+    FarmSnow2
+    task.wait(3)
     SetStatus("Idle", Color3.new(0.05,1,0.05))
 end)
