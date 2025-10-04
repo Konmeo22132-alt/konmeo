@@ -323,11 +323,12 @@ function FarmGodGuard()
     local hrp = SafeHRP()
     if hrp then
         pcall(function()
-            ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-4607.82275,872.54248,-1667.55688))
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-4607.82275, 872.54248, -1667.55688))
         end)
+        task.wait(1)
     end
     while MyLevel >= 10 and MyLevel <= 65 do
-        SetStatus("Farming God's Guard", Color3.new(1,0,0))
+        SetStatus("Farming God's Guard", Color3.new(1, 0, 0))
         local target = NearestEnemyByPrefix("God's Guard")
         if target then
             StartHoverOnTarget(target)
@@ -338,7 +339,7 @@ function FarmGodGuard()
             until not IsEntityAlive(target) or MyLevel > 65
             StopHover()
         else
-            task.wait(0.2)
+            task.wait(0.3)
         end
         MyLevel = LocalPlayer.Data.Level.Value
         task.wait(0.1)
@@ -445,23 +446,28 @@ end)
 local isRedeeming = true
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.5)
+
     if getgenv().AUTOHAKI then
         pcall(function()
             ReplicatedStorage.Remotes.CommF_:InvokeServer("Buso")
         end)
     end
+
     if not isRedeeming then
         local lv = LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data.Level.Value or 1
+
         if lv < 10 then
             spawn(FarmBandit)
         elseif lv >= 10 and lv <= 65 then
-            pcall(function()
-                ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-4607.82275,872.54248,-1667.55688))
-            end)
             spawn(FarmGodGuard)
+        elseif lv >= 66 and lv <= 74 then
+            spawn(FarmDesert1)
+        elseif lv >= 75 and lv <= 89 then
+            spawn(FarmDesert2)
         end
     end
 end)
+
 
 function JoinPirates()
     pcall(function()
