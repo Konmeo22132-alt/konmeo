@@ -229,12 +229,18 @@ function RedeemCode(Value)
     end)
 end
 
-local function NearestEnemyByName(name)
+local function NameStartsWith(entityName, base)
+    if type(entityName) ~= "string" or type(base) ~= "string" then return false end
+    local s = string.sub(entityName, 1, #base)
+    return s == base
+end
+
+local function NearestEnemyByPrefix(prefix)
     local hrp = SafeHRP()
     if not hrp then return nil end
     local nearest, dist = nil, 1/0
     for _,e in ipairs(Workspace.Enemies:GetChildren()) do
-        if e.Name == name and IsEntityAlive(e) and e:FindFirstChild("HumanoidRootPart") then
+        if IsEntityAlive(e) and NameStartsWith(e.Name, prefix) and e:FindFirstChild("HumanoidRootPart") then
             local d = (e.HumanoidRootPart.Position - hrp.Position).Magnitude
             if d < dist then nearest = e dist = d end
         end
@@ -259,7 +265,7 @@ function FarmBandit()
             end)
             task.wait(1)
         else
-            local target = NearestEnemyByName("Bandit")
+            local target = NearestEnemyByPrefix("Bandit")
             if target then
                 repeat
                     if not IsEntityAlive(target) or not target:FindFirstChild("HumanoidRootPart") then break end
@@ -282,17 +288,23 @@ function FarmGodGuard()
     if not World1 then return end
     EnableNoClip()
     local MyLevel = LocalPlayer.Data.Level.Value
+    local hrp = SafeHRP()
+    if hrp then
+        pcall(function()
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-4607.82275,872.54248,-1667.55688))
+        end)
+    end
     while MyLevel >= 10 and MyLevel <= 65 do
         SetStatus("Farming God's Guard", Color3.new(1,0,0))
-        local hrp = SafeHRP()
-        if hrp then
-            if (hrp.Position-Vector3.new(-4721.88867,843.874695,-1949.96643)).Magnitude > 10000 then
+        local h = SafeHRP()
+        if h then
+            if (h.Position-Vector3.new(-4721.88867,843.874695,-1949.96643)).Magnitude > 10000 then
                 pcall(function()
                     ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-4607.82275,872.54248,-1667.55688))
                 end)
             end
         end
-        local target = NearestEnemyByName("God's Guard")
+        local target = NearestEnemyByPrefix("God's Guard")
         if target then
             repeat
                 if not IsEntityAlive(target) or not target:FindFirstChild("HumanoidRootPart") then break end
@@ -349,6 +361,12 @@ LocalPlayer.CharacterAdded:Connect(function()
         end
     end
 end)
+
+function JoinPirates()
+    pcall(function()
+        ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
+    end)
+end
 
 spawn(function()
     JoinPirates()
