@@ -541,7 +541,7 @@ LocalPlayer.CharacterAdded:Connect(function()
             spawn(FarmDesert2)
         elseif lv >= 90 and lv <= 99 then
             spawn(FarmSnow1)
-        elseif elseif lv >= 100 and lv <= 119 then
+        elseif lv >= 100 and lv <= 119 then
             spawn(FarmSnow2)
         end
     end
@@ -573,7 +573,7 @@ spawn(function()
     task.wait(3)
     FarmSnow1()
     task.wait(3)
-    FarmSnow2
+    FarmSnow2()
     task.wait(3)
     SetStatus("Idle", Color3.new(0.05,1,0.05))
 end)
