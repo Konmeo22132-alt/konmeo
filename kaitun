@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local playerGui = LocalPlayer:WaitForChild("PlayerGui")
 
@@ -63,13 +64,41 @@ local function IsEntityAlive(entity)
     return humanoid and humanoid.Health > 0
 end
 
+local function SafeHRP()
+    return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+end
+
+local function SafeQuestVisible()
+    local main = LocalPlayer.PlayerGui:FindFirstChild("Main")
+    local quest = main and main:FindFirstChild("Quest")
+    return quest and quest.Visible or false
+end
+
+local noclipConn
+local function EnableNoClip()
+    if noclipConn then return end
+    noclipConn = RunService.Stepped:Connect(function()
+        local ch = LocalPlayer.Character
+        if not ch then return end
+        for _,p in ipairs(ch:GetDescendants()) do
+            if p:IsA("BasePart") then p.CanCollide = false end
+        end
+    end)
+end
+local function DisableNoClip()
+    if noclipConn then noclipConn:Disconnect() noclipConn = nil end
+end
+
 local function MoveAbove(enemy)
-    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp or not enemy or not enemy:FindFirstChild("HumanoidRootPart") then return end
-    local goalCFrame = CFrame.new(enemy.HumanoidRootPart.Position + Vector3.new(0,10,0), enemy.HumanoidRootPart.Position)
-    local tween = TweenService:Create(hrp, TweenInfo.new(0.15, Enum.EasingStyle.Linear), {CFrame = goalCFrame})
+    local hrp = SafeHRP()
+    if not hrp then return end
+    if not enemy or not enemy.Parent then return end
+    local targetHRP = enemy:FindFirstChild("HumanoidRootPart")
+    if not targetHRP then return end
     hrp.CanCollide = false
-    tween:Play()
+    local goal = CFrame.new(targetHRP.Position + Vector3.new(0,10,0), targetHRP.Position)
+    local tw = TweenService:Create(hrp, TweenInfo.new(0.12, Enum.EasingStyle.Linear), {CFrame = goal})
+    tw:Play()
 end
 
 local function GetEnemiesInRange(character, range)
@@ -115,17 +144,18 @@ function AttackNoCoolDown()
     if equippedWeapon:FindFirstChild("LeftClickRemote") then
         local attackCount = 1
         for _, enemy in ipairs(enemiesInRange) do
-            local rootPart = enemy:FindFirstChild("HumanoidRootPart")
-            if rootPart then
-                local direction = (rootPart.Position - character:GetPivot().Position).Unit
-                equippedWeapon.LeftClickRemote:FireServer(direction, attackCount)
+            if enemy and enemy.Parent and enemy:FindFirstChild("HumanoidRootPart") then
+                local direction = (enemy.HumanoidRootPart.Position - character:GetPivot().Position).Unit
+                pcall(function()
+                    equippedWeapon.LeftClickRemote:FireServer(direction, attackCount)
+                end)
                 attackCount = attackCount + 1
             end
         end
     else
         local targets, mainTarget = {}, nil
         for _, enemy in ipairs(enemiesInRange) do
-            if not enemy:GetAttribute("IsBoat") then
+            if enemy and enemy.Parent and not enemy:GetAttribute("IsBoat") then
                 local head = enemy:FindFirstChild("Head")
                 if head then
                     table.insert(targets, { enemy, head })
@@ -134,12 +164,20 @@ function AttackNoCoolDown()
             end
         end
         if mainTarget then
-            local attackEvent = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RE/RegisterAttack")
-            local hitEvent = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RE/RegisterHit")
-            pcall(function()
-                attackEvent:FireServer(0.1)
-                hitEvent:FireServer(mainTarget, targets)
-            end)
+            local attackEvent = ReplicatedStorage:FindFirstChild("Modules")
+                and ReplicatedStorage.Modules:FindFirstChild("Net")
+                and ReplicatedStorage.Modules.Net:FindFirstChild("RE")
+                and ReplicatedStorage.Modules.Net.RE:FindFirstChild("RegisterAttack")
+            local hitEvent = ReplicatedStorage:FindFirstChild("Modules")
+                and ReplicatedStorage.Modules:FindFirstChild("Net")
+                and ReplicatedStorage.Modules.Net:FindFirstChild("RE")
+                and ReplicatedStorage.Modules.Net.RE:FindFirstChild("RegisterHit")
+            if attackEvent and hitEvent then
+                pcall(function()
+                    attackEvent:FireServer(0.1)
+                    hitEvent:FireServer(mainTarget, targets)
+                end)
+            end
         end
     end
 end
@@ -165,7 +203,10 @@ end
 spawn(function()
     while wait() do
         if AutoStatMelee() then
-            ReplicatedStorage.Remotes.CommF_:InvokeServer("AddPoint","Melee",3)
+            local v741 = { [1] = "AddPoint", [2] = "Melee", [3] = 3 }
+            pcall(function()
+                ReplicatedStorage.Remotes.CommF_:InvokeServer(unpack(v741))
+            end)
         end
     end
 end)
@@ -188,65 +229,85 @@ function RedeemCode(Value)
     end)
 end
 
+local function NearestEnemyByName(name)
+    local hrp = SafeHRP()
+    if not hrp then return nil end
+    local nearest, dist = nil, 1/0
+    for _,e in ipairs(Workspace.Enemies:GetChildren()) do
+        if e.Name == name and IsEntityAlive(e) and e:FindFirstChild("HumanoidRootPart") then
+            local d = (e.HumanoidRootPart.Position - hrp.Position).Magnitude
+            if d < dist then nearest = e dist = d end
+        end
+    end
+    return nearest
+end
+
 function FarmBandit()
     if not World1 then return end
+    EnableNoClip()
     local MyLevel = LocalPlayer.Data.Level.Value
     while MyLevel < 10 do
         SetStatus("Farming Bandit", Color3.new(1,0,0))
-        local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main"):FindFirstChild("Quest")
-        if not questGui.Visible then
-            LocalPlayer.Character:PivotTo(CFrame.new(1059.37195,15.4495068,1550.4231))
-            wait(1)
+        if not SafeQuestVisible() then
+            local chrp = SafeHRP()
+            if chrp then
+                LocalPlayer.Character:PivotTo(CFrame.new(1059.37195,15.4495068,1550.4231))
+            end
+            task.wait(1)
             pcall(function()
                 ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest","BanditQuest1",1)
             end)
-            wait(1)
+            task.wait(1)
         else
-            local enemies = Workspace.Enemies:GetChildren()
-            for _,enemy in ipairs(enemies) do
-                if enemy.Name == "Bandit" and IsEntityAlive(enemy) then
-                    repeat
-                        task.wait(0.05)
-                        MoveAbove(enemy)
-                        AttackNoCoolDown()
-                        MyLevel = LocalPlayer.Data.Level.Value
-                    until not IsEntityAlive(enemy) or MyLevel >= 10
-                end
-                if MyLevel >= 10 then break end
+            local target = NearestEnemyByName("Bandit")
+            if target then
+                repeat
+                    if not IsEntityAlive(target) or not target:FindFirstChild("HumanoidRootPart") then break end
+                    task.wait(0.05)
+                    MoveAbove(target)
+                    AttackNoCoolDown()
+                    MyLevel = LocalPlayer.Data.Level.Value
+                until not IsEntityAlive(target) or MyLevel >= 10
+            else
+                task.wait(0.2)
             end
         end
         MyLevel = LocalPlayer.Data.Level.Value
         task.wait(0.1)
     end
+    DisableNoClip()
 end
 
 function FarmGodGuard()
     if not World1 then return end
+    EnableNoClip()
     local MyLevel = LocalPlayer.Data.Level.Value
     while MyLevel >= 10 and MyLevel <= 65 do
         SetStatus("Farming God's Guard", Color3.new(1,0,0))
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            if (LocalPlayer.Character.HumanoidRootPart.Position-Vector3.new(-4721.88867,843.874695,-1949.96643)).Magnitude > 10000 then
+        local hrp = SafeHRP()
+        if hrp then
+            if (hrp.Position-Vector3.new(-4721.88867,843.874695,-1949.96643)).Magnitude > 10000 then
                 pcall(function()
-                    ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-4607.82275, 872.54248, -1667.55688))
+                    ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-4607.82275,872.54248,-1667.55688))
                 end)
             end
         end
-        local enemies = Workspace.Enemies:GetChildren()
-        for _,enemy in ipairs(enemies) do
-            if enemy.Name == "God's Guard" and IsEntityAlive(enemy) then
-                repeat
-                    task.wait(0.05)
-                    MoveAbove(enemy)
-                    AttackNoCoolDown()
-                    MyLevel = LocalPlayer.Data.Level.Value
-                until not IsEntityAlive(enemy) or MyLevel > 65
-            end
-            if MyLevel > 65 then break end
+        local target = NearestEnemyByName("God's Guard")
+        if target then
+            repeat
+                if not IsEntityAlive(target) or not target:FindFirstChild("HumanoidRootPart") then break end
+                task.wait(0.05)
+                MoveAbove(target)
+                AttackNoCoolDown()
+                MyLevel = LocalPlayer.Data.Level.Value
+            until not IsEntityAlive(target) or MyLevel > 65
+        else
+            task.wait(0.2)
         end
         MyLevel = LocalPlayer.Data.Level.Value
         task.wait(0.1)
     end
+    DisableNoClip()
 end
 
 getgenv().AUTOHAKI = true
@@ -255,7 +316,7 @@ spawn(function()
     local debounceTime = 2
     while task.wait(0.1) do
         if getgenv().AUTOHAKI then
-            if not LocalPlayer.Character:FindFirstChild("HasBuso") and canUseHaki then
+            if not (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HasBuso")) and canUseHaki then
                 canUseHaki = false
                 local args = { [1] = "Buso" }
                 pcall(function()
