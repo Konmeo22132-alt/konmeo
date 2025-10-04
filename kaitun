@@ -68,12 +68,6 @@ local function SafeHRP()
     return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
 end
 
-local function SafeQuestVisible()
-    local main = LocalPlayer.PlayerGui:FindFirstChild("Main")
-    local quest = main and main:FindFirstChild("Quest")
-    return quest and quest.Visible or false
-end
-
 local noclipConn
 local function EnableNoClip()
     if noclipConn then return end
@@ -89,130 +83,16 @@ local function DisableNoClip()
     if noclipConn then noclipConn:Disconnect() noclipConn = nil end
 end
 
-local hoverConnection
-local function CreateHoverBP()
-    local hrp = SafeHRP()
-    if not hrp then return nil end
-    local bp = hrp:FindFirstChild("HuneHoverBP")
-    if bp and bp:IsA("BodyPosition") then return bp end
-    bp = Instance.new("BodyPosition")
-    bp.Name = "HuneHoverBP"
-    bp.MaxForce = Vector3.new(1e6,1e6,1e6)
-    bp.P = 5e4
-    bp.D = 1e3
-    bp.Position = hrp.Position
-    bp.Parent = hrp
-    return bp
-end
-
-local function DestroyHoverBP()
-    local hrp = SafeHRP()
-    if not hrp then return end
-    local bp = hrp:FindFirstChild("HuneHoverBP")
-    if bp then pcall(function() bp:Destroy() end) end
-    if hoverConnection then hoverConnection:Disconnect() hoverConnection = nil end
-end
-
-local currentTarget = nil
-local hoverBP = nil
-local function StartHoverOnTarget(target)
-    if not target or not target.Parent or not target:FindFirstChild("HumanoidRootPart") then return end
-    currentTarget = target
-    hoverBP = CreateHoverBP()
-    if not hoverBP then return end
-    if hoverConnection then hoverConnection:Disconnect() hoverConnection = nil end
-    hoverConnection = RunService.Heartbeat:Connect(function()
-        local hrp = SafeHRP()
-        if not hrp or not currentTarget or not currentTarget.Parent or not currentTarget:FindFirstChild("HumanoidRootPart") then
-            return
-        end
-        local tpos = currentTarget.HumanoidRootPart.Position + Vector3.new(0,15,0)
-        hoverBP.Position = tpos
-        hrp.CFrame = CFrame.new(hoverBP.Position, currentTarget.HumanoidRootPart.Position)
-    end)
-end
-
-local function StopHover()
-    currentTarget = nil
-    DestroyHoverBP()
-end
-
 local function HoverAbove(enemy)
-    if not enemy or not enemy.Parent or not enemy:FindFirstChild("HumanoidRootPart") then return end
-    StartHoverOnTarget(enemy)
+    local hrp = SafeHRP()
+    if not hrp or not enemy or not enemy:FindFirstChild("HumanoidRootPart") then return end
+    local root = enemy.HumanoidRootPart
+    hrp.CanCollide = false
+    local distance = (hrp.Position - root.Position).Magnitude
+    local goal = CFrame.new(root.Position + Vector3.new(0,15,0), root.Position)
+    local tw = TweenService:Create(hrp, TweenInfo.new(distance/300, Enum.EasingStyle.Linear), {CFrame = goal})
+    tw:Play()
 end
-
-local function GetEnemiesInRange(character, range)
-    local enemies = Workspace.Enemies:GetChildren()
-    local players = Players:GetPlayers()
-    local targets = {}
-    local playerPos = character:GetPivot().Position
-    for _, enemy in ipairs(enemies) do
-        local rootPart = enemy:FindFirstChild("HumanoidRootPart")
-        if rootPart and IsEntityAlive(enemy) then
-            local distance = (rootPart.Position - playerPos).Magnitude
-            if distance <= range then
-                table.insert(targets, enemy)
-            end
-        end
-    end
-    for _, otherPlayer in ipairs(players) do
-        if otherPlayer ~= LocalPlayer and otherPlayer.Character then
-            local rootPart = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if rootPart and IsEntityAlive(otherPlayer.Character) then
-                local distance = (rootPart.Position - playerPos).Magnitude
-                if distance <= range then
-                    table.insert(targets, otherPlayer.Character)
-                end
-            end
-        end
-    end
-    return targets
-end
-
-function AttackNoCoolDown(enemy)
-    if not enemy or not IsEntityAlive(enemy) then return end
-    local character = LocalPlayer.Character
-    if not character then return end
-    local equippedWeapon
-    for _, item in ipairs(character:GetChildren()) do
-        if item:IsA("Tool") then
-            equippedWeapon = item
-            break
-        end
-    end
-    if not equippedWeapon then return end
-    local rootPart = enemy:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return end
-    if equippedWeapon:FindFirstChild("LeftClickRemote") then
-        local direction = (rootPart.Position - character:GetPivot().Position).Unit
-        pcall(function()
-            equippedWeapon.LeftClickRemote:FireServer(direction, 1)
-        end)
-    else
-        local head = enemy:FindFirstChild("Head")
-        if head then
-            local storage = ReplicatedStorage
-            local attackEvent = storage:WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RE"):WaitForChild("RegisterAttack")
-            local hitEvent = storage:WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RE"):WaitForChild("RegisterHit")
-            pcall(function()
-                attackEvent:FireServer(0.1)
-                hitEvent:FireServer(rootPart, {{enemy, head}})
-            end)
-        end
-    end
-end
-
-local fastAttackEnabled = true
-spawn(function()
-    while task.wait(0.05) do
-        if fastAttackEnabled and currentTarget and IsEntityAlive(currentTarget) then
-            pcall(function()
-                AttackNoCoolDown(currentTarget)
-            end)
-        end
-    end
-end)
 
 local worldMap = {
     [2753915549] = true,
@@ -286,29 +166,16 @@ function FarmBandit()
     local MyLevel = LocalPlayer.Data.Level.Value
     while MyLevel < 10 do
         SetStatus("Farming Bandit", Color3.new(1,0,0))
-        if not SafeQuestVisible() then
-            local chrp = SafeHRP()
-            if chrp then
-                LocalPlayer.Character:PivotTo(CFrame.new(1059.37195,15.4495068,1550.4231))
-            end
-            task.wait(1)
-            pcall(function()
-                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest","BanditQuest1",1)
-            end)
-            task.wait(1)
+        local target = NearestEnemyByPrefix("Bandit")
+        if target then
+            repeat
+                if not IsEntityAlive(target) or not target:FindFirstChild("HumanoidRootPart") then break end
+                task.wait(0.05)
+                HoverAbove(target)
+                MyLevel = LocalPlayer.Data.Level.Value
+            until not IsEntityAlive(target) or MyLevel >= 10
         else
-            local target = NearestEnemyByPrefix("Bandit")
-            if target then
-                StartHoverOnTarget(target)
-                repeat
-                    if not IsEntityAlive(target) or not target:FindFirstChild("HumanoidRootPart") then break end
-                    task.wait(0.05)
-                    MyLevel = LocalPlayer.Data.Level.Value
-                until not IsEntityAlive(target) or MyLevel >= 10
-                StopHover()
-            else
-                task.wait(0.2)
-            end
+            task.wait(0.2)
         end
         MyLevel = LocalPlayer.Data.Level.Value
         task.wait(0.1)
@@ -328,15 +195,22 @@ function FarmGodGuard()
     end
     while MyLevel >= 10 and MyLevel <= 65 do
         SetStatus("Farming God's Guard", Color3.new(1,0,0))
+        local h = SafeHRP()
+        if h then
+            if (h.Position-Vector3.new(-4721.88867,843.874695,-1949.96643)).Magnitude > 10000 then
+                pcall(function()
+                    ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-4607.82275,872.54248,-1667.55688))
+                end)
+            end
+        end
         local target = NearestEnemyByPrefix("God's Guard")
         if target then
-            StartHoverOnTarget(target)
             repeat
                 if not IsEntityAlive(target) or not target:FindFirstChild("HumanoidRootPart") then break end
                 task.wait(0.05)
+                HoverAbove(target)
                 MyLevel = LocalPlayer.Data.Level.Value
             until not IsEntityAlive(target) or MyLevel > 65
-            StopHover()
         else
             task.wait(0.2)
         end
@@ -365,9 +239,89 @@ spawn(function()
     end
 end)
 
+local player = LocalPlayer
+local function GetEnemiesInRange(character, range)
+    local enemies = Workspace.Enemies:GetChildren()
+    local players = Players:GetPlayers()
+    local targets = {}
+    local playerPos = character:GetPivot().Position
+    for _, enemy in ipairs(enemies) do
+        local rootPart = enemy:FindFirstChild("HumanoidRootPart")
+        if rootPart and IsEntityAlive(enemy) then
+            local distance = (rootPart.Position - playerPos).Magnitude
+            if distance <= range then
+                table.insert(targets, enemy)
+            end
+        end
+    end
+    for _, otherPlayer in ipairs(players) do
+        if otherPlayer ~= player and otherPlayer.Character then
+            local rootPart = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if rootPart and IsEntityAlive(otherPlayer.Character) then
+                local distance = (rootPart.Position - playerPos).Magnitude
+                if distance <= range then
+                    table.insert(targets, otherPlayer.Character)
+                end
+            end
+        end
+    end
+    return targets
+end
+
+function AttackNoCoolDown()
+    local character = player.Character
+    if not character then return end
+    local equippedWeapon
+    for _, item in ipairs(character:GetChildren()) do
+        if item:IsA("Tool") then
+            equippedWeapon = item
+            break
+        end
+    end
+    if not equippedWeapon then return end
+    local enemiesInRange = GetEnemiesInRange(character, 60)
+    if equippedWeapon:FindFirstChild("LeftClickRemote") then
+        local attackCount = 1
+        for _, enemy in ipairs(enemiesInRange) do
+            local rootPart = enemy:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+                local direction = (rootPart.Position - character:GetPivot().Position).Unit
+                equippedWeapon.LeftClickRemote:FireServer(direction, attackCount)
+                attackCount = attackCount + 1
+            end
+        end
+    else
+        local targets, mainTarget = {}, nil
+        for _, enemy in ipairs(enemiesInRange) do
+            if not enemy:GetAttribute("IsBoat") then
+                local head = enemy:FindFirstChild("Head")
+                if head then
+                    table.insert(targets, { enemy, head })
+                    mainTarget = head
+                end
+            end
+        end
+        if mainTarget then
+            local storage = ReplicatedStorage
+            local attackEvent = storage:WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RE/RegisterAttack")
+            local hitEvent = storage:WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RE/RegisterHit")
+            pcall(function()
+                attackEvent:FireServer(0.1)
+                hitEvent:FireServer(mainTarget, targets)
+            end)
+        end
+    end
+end
+
+spawn(function()
+    while task.wait(0.01) do
+        pcall(AttackNoCoolDown)
+    end
+end)
+
 local isRedeeming = true
 LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(0.5)
+    task.wait(1)
     if getgenv().AUTOHAKI then
         pcall(function()
             ReplicatedStorage.Remotes.CommF_:InvokeServer("Buso")
@@ -379,18 +333,12 @@ LocalPlayer.CharacterAdded:Connect(function()
             spawn(FarmBandit)
         elseif lv >= 10 and lv <= 65 then
             pcall(function()
-                ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-4607.82275,872.54248,-1667.55688))
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-4607.82275, 872.54248, -1667.55688))
             end)
             spawn(FarmGodGuard)
         end
     end
 end)
-
-function JoinPirates()
-    pcall(function()
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
-    end)
-end
 
 spawn(function()
     JoinPirates()
