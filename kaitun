@@ -505,7 +505,7 @@ function FarmGodGuard()
     if hrp then
         tweenToTarget(entrancePos)
         pcall(function()
-            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", entrancePos)
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", entrancePos)
         end)
         task.wait(1)
     end
@@ -522,34 +522,17 @@ function FarmGodGuard()
         end)
 
         SetStatus("Farming God's Guard", Color3.new(1, 0, 0))
-
-        local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
-        if questGui and questGui:FindFirstChild("Quest") and questGui.Quest.Visible then
-            local title = questGui.Quest.Container.QuestTitle.Title.Text
-            if not string.find(title, "God's Guard") then
-                AbandonQuest()
-                task.wait(0.5)
-            end
-        end
-
-        if not SafeQuestVisible() then
-            pcall(function()
-                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", "SkyQuest", 1)
-            end)
-            task.wait(1)
+        local target = NearestEnemyByPrefix("God's Guard")
+        if target then
+            StartHoverOnTarget(target)
+            repeat
+                if not IsEntityAlive(target) or not target:FindFirstChild("HumanoidRootPart") then break end
+                task.wait(0.05)
+                MyLevel = LocalPlayer.Data.Level.Value
+            until not IsEntityAlive(target) or MyLevel > 39
+            StopHover()
         else
-            local target = NearestEnemyByPrefix("God's Guard")
-            if target then
-                StartHoverOnTarget(target)
-                repeat
-                    if not IsEntityAlive(target) or not target:FindFirstChild("HumanoidRootPart") then break end
-                    task.wait(0.05)
-                    MyLevel = LocalPlayer.Data.Level.Value
-                until not IsEntityAlive(target) or MyLevel > 65
-                StopHover()
-            else
-                task.wait(0.3)
-            end
+            task.wait(0.3)
         end
         MyLevel = LocalPlayer.Data.Level.Value
         task.wait(0.1)
