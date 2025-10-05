@@ -399,6 +399,16 @@ function FarmBandit()
         end)
 
         SetStatus("Farming Bandit", Color3.new(1,0,0))
+
+        local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
+        if questGui and questGui:FindFirstChild("Quest") and questGui.Quest.Visible then
+            local title = questGui.Quest.Container.QuestTitle.Title.Text
+            if not string.find(title, "Bandit") then
+                AbandonQuest()
+                task.wait(0.5)
+            end
+        end
+
         if not SafeQuestVisible() then
             local hrp = SafeHRP()
             if hrp then
@@ -440,7 +450,7 @@ end
 function FarmGodGuard()
     if not World1 then return end
     local MyLevel = LocalPlayer.Data.Level.Value
-    if MyLevel < 10 or MyLevel > 65 then return end
+    if MyLevel < 10 or MyLevel > 39 then return end
     EnableNoClip()
     local hrp = SafeHRP()
     local entrancePos = Vector3.new(-4607.82275, 872.54248, -1667.55688)
@@ -495,7 +505,7 @@ function FarmGodGuard()
     if hrp then
         tweenToTarget(entrancePos)
         pcall(function()
-            ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", entrancePos)
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", entrancePos)
         end)
         task.wait(1)
     end
@@ -512,17 +522,140 @@ function FarmGodGuard()
         end)
 
         SetStatus("Farming God's Guard", Color3.new(1, 0, 0))
-        local target = NearestEnemyByPrefix("God's Guard")
-        if target then
-            StartHoverOnTarget(target)
-            repeat
-                if not IsEntityAlive(target) or not target:FindFirstChild("HumanoidRootPart") then break end
-                task.wait(0.05)
-                MyLevel = LocalPlayer.Data.Level.Value
-            until not IsEntityAlive(target) or MyLevel > 65
-            StopHover()
+
+        local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
+        if questGui and questGui:FindFirstChild("Quest") and questGui.Quest.Visible then
+            local title = questGui.Quest.Container.QuestTitle.Title.Text
+            if not string.find(title, "God's Guard") then
+                AbandonQuest()
+                task.wait(0.5)
+            end
+        end
+
+        if not SafeQuestVisible() then
+            pcall(function()
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", "SkyQuest", 1)
+            end)
+            task.wait(1)
         else
-            task.wait(0.3)
+            local target = NearestEnemyByPrefix("God's Guard")
+            if target then
+                StartHoverOnTarget(target)
+                repeat
+                    if not IsEntityAlive(target) or not target:FindFirstChild("HumanoidRootPart") then break end
+                    task.wait(0.05)
+                    MyLevel = LocalPlayer.Data.Level.Value
+                until not IsEntityAlive(target) or MyLevel > 65
+                StopHover()
+            else
+                task.wait(0.3)
+            end
+        end
+        MyLevel = LocalPlayer.Data.Level.Value
+        task.wait(0.1)
+    end
+    DisableNoClip()
+end
+
+function FarmPirate()
+    if not World1 then return end
+    EnableNoClip()
+    local MyLevel = LocalPlayer.Data.Level.Value
+    local questPos = CFrame.new(-1141.07483, 4.10001802, 3831.5498)
+    local monPos = Vector3.new(-1140.083740234375, 14.809885025024414, 4322.92138671875)
+
+    spawn(function()
+        while task.wait(0.1) do
+            pcall(function()
+                local player = game.Players.LocalPlayer
+                local character = player.Character
+                local backpack = player.Backpack
+                local fruits = {
+                    {"Rocket Fruit","Rocket-Rocket"},{"Spin Fruit","Spin-Spin"},{"Blade Fruit","Blade-Blade"},
+                    {"Spring Fruit","Spring-Spring"},{"Bomb Fruit","Bomb-Bomb"},{"Smoke Fruit","Smoke-Smoke"},
+                    {"Spike Fruit","Spike-Spike"},{"Flame Fruit","Flame-Flame"},{"Falcon Fruit","Falcon-Falcon"},
+                    {"Ice Fruit","Ice-Ice"},{"Sand Fruit","Sand-Sand"},{"Dark Fruit","Dark-Dark"},
+                    {"Diamond Fruit","Diamond-Diamond"},{"Light Fruit","Light-Light"},{"Rubber Fruit","Rubber-Rubber"},
+                    {"Creation Fruit","Creation-Creation"},{"Ghost Fruit","Ghost-Ghost"},{"Magma Fruit","Magma-Magma"},
+                    {"Quake Fruit","Quake-Quake"},{"Buddha Fruit","Buddha-Buddha"},{"Love Fruit","Love-Love"},
+                    {"Spider Fruit","Spider-Spider"},{"Sound Fruit","Sound-Sound"},{"Phoenix Fruit","Phoenix-Phoenix"},
+                    {"Portal Fruit","Portal-Portal"},{"Lighting Fruit","Lighting-Lighting"},{"Pain Fruit","Pain-Pain"},
+                    {"Blizzard Fruit","Blizzard-Blizzard"},{"Gravity Fruit","Gravity-Gravity"},{"Mammoth Fruit","Mammoth-Mammoth"},
+                    {"T-Rex Fruit","T-Rex-T-Rex"},{"Dough Fruit","Dough-Dough"},{"Shadow Fruit","Shadow-Shadow"},
+                    {"Venom Fruit","Venom-Venom"},{"Gas Fruit","Gas-Gas"},{"Control Fruit","Control-Control"},
+                    {"Spirit Fruit","Spirit-Spirit"},{"Leopard Fruit","Leopard-Leopard"},{"Yeti Fruit","Yeti-Yeti"},
+                    {"Kitsune Fruit","Kitsune-Kitsune"},{"Dragon Fruit","Dragon (West)-Dragon (West)"},
+                    {"Dragon Fruit","Dragon (East)-Dragon (East)"}
+                }
+                for _, fruit in ipairs(fruits) do
+                    local fruitName, serverName = fruit[1], fruit[2]
+                    if character:FindFirstChild(fruitName) or backpack:FindFirstChild(fruitName) then
+                        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", serverName, backpack:FindFirstChild(fruitName))
+                    end
+                end
+            end)
+        end
+    end)
+
+    local function tweenToTarget(pos)
+        local hrp = SafeHRP()
+        if not hrp then return end
+        local distance = (hrp.Position - pos).Magnitude
+        if distance > 1000 then
+            BTP(CFrame.new(pos))
+        else
+            local tweenInfo = TweenInfo.new(distance / 300, Enum.EasingStyle.Linear)
+            local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(pos)})
+            tween:Play()
+            tween.Completed:Wait()
+        end
+    end
+
+    while MyLevel >= 40 and MyLevel <= 59 do
+        local fruit = getNearestFruit and getNearestFruit()
+        if fruit and fruit:FindFirstChild("Handle") then
+            SetStatus("Collecting Fruit...", Color3.new(0,1,1))
+            tweenToTarget(fruit.Handle.Position + Vector3.new(0,3,0))
+        end
+
+        pcall(function()
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("Cousin","Buy")
+        end)
+
+        SetStatus("Farming Brute", Color3.new(1, 0.5, 0))
+        local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
+        if questGui and questGui:FindFirstChild("Quest") and questGui.Quest.Visible then
+            local title = questGui.Quest.Container.QuestTitle.Title.Text
+            if not string.find(title, "Brute") then
+                AbandonQuest()
+                task.wait(0.5)
+            end
+        end
+
+        if not SafeQuestVisible() then
+            local hrp = SafeHRP()
+            if hrp then
+                tweenToTarget(questPos.Position)
+            end
+            task.wait(1)
+            pcall(function()
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", "BuggyQuest1", 2)
+            end)
+            task.wait(1)
+        else
+            local target = NearestEnemyByPrefix("Brute")
+            if target then
+                StartHoverOnTarget(target)
+                repeat
+                    if not IsEntityAlive(target) or not target:FindFirstChild("HumanoidRootPart") then break end
+                    task.wait(0.05)
+                    MyLevel = LocalPlayer.Data.Level.Value
+                until not IsEntityAlive(target) or MyLevel > 59
+                StopHover()
+            else
+                tweenToTarget(monPos)
+                task.wait(0.5)
+            end
         end
         MyLevel = LocalPlayer.Data.Level.Value
         task.wait(0.1)
@@ -582,7 +715,7 @@ function FarmDesert1()
         end
     end
 
-    while MyLevel >= 66 and MyLevel <= 74 do
+    while MyLevel >= 60 and MyLevel <= 74 do
         local fruit = getNearestFruit and getNearestFruit()
         if fruit and fruit:FindFirstChild("Handle") then
             SetStatus("Collecting Fruit...", Color3.new(0,1,1))
@@ -594,6 +727,16 @@ function FarmDesert1()
         end)
 
         SetStatus("Farming Desert Bandit", Color3.new(1, 0.7, 0))
+
+        local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
+        if questGui and questGui:FindFirstChild("Quest") and questGui.Quest.Visible then
+            local title = questGui.Quest.Container.QuestTitle.Title.Text
+            if not string.find(title, "Desert Bandit") then
+                AbandonQuest()
+                task.wait(0.5)
+            end
+        end
+
         if not SafeQuestVisible() then
             local chrp = SafeHRP()
             if chrp then
@@ -689,6 +832,16 @@ function FarmDesert2()
         end)
 
         SetStatus("Farming Desert Officer", Color3.new(1, 0.8, 0))
+
+        local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
+        if questGui and questGui:FindFirstChild("Quest") and questGui.Quest.Visible then
+            local title = questGui.Quest.Container.QuestTitle.Title.Text
+            if not string.find(title, "Desert Officer") then
+                AbandonQuest()
+                task.wait(0.5)
+            end
+        end
+
         if not SafeQuestVisible() then
             local chrp = SafeHRP()
             if chrp then
@@ -784,6 +937,16 @@ function FarmSnow1()
         end)
 
         SetStatus("Farming Snow Bandit", Color3.new(0.8, 0.9, 1))
+
+        local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
+        if questGui and questGui:FindFirstChild("Quest") and questGui.Quest.Visible then
+            local title = questGui.Quest.Container.QuestTitle.Title.Text
+            if not string.find(title, "Snow Bandit") then
+                AbandonQuest()
+                task.wait(0.5)
+            end
+        end
+
         if not SafeQuestVisible() then
             local chrp = SafeHRP()
             if chrp then
@@ -809,6 +972,7 @@ function FarmSnow1()
                 task.wait(0.5)
             end
         end
+
         MyLevel = LocalPlayer.Data.Level.Value
         task.wait(0.1)
     end
@@ -879,6 +1043,16 @@ function FarmSnow2()
         end)
 
         SetStatus("Farming Snowman", Color3.new(0.8, 0.9, 1))
+
+        local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
+        if questGui and questGui:FindFirstChild("Quest") and questGui.Quest.Visible then
+            local title = questGui.Quest.Container.QuestTitle.Title.Text
+            if not string.find(title, "Snowman") then
+                AbandonQuest()
+                task.wait(0.5)
+            end
+        end
+
         if not SafeQuestVisible() then
             local chrp = SafeHRP()
             if chrp then
@@ -944,9 +1118,11 @@ LocalPlayer.CharacterAdded:Connect(function()
 
         if lv < 10 then
             spawn(FarmBandit)
-        elseif lv >= 10 and lv <= 65 then
+        elseif lv >= 10 and lv <= 39 then
             spawn(FarmGodGuard)
-        elseif lv >= 66 and lv <= 74 then
+        elseif lv >= 40 and lv <= 59 then
+            spawn(FarmPirate)
+        elseif lv >= 60 and lv <= 74 then
             spawn(FarmDesert1)
         elseif lv >= 75 and lv <= 89 then
             spawn(FarmDesert2)
@@ -978,6 +1154,7 @@ spawn(function()
     task.wait(0.5)
     FarmBandit()
     FarmGodGuard()
+    FarmPirate()
     FarmDesert1()
     task.wait(3)
     FarmDesert2()
