@@ -1,4 +1,4 @@
-repeat task.wait() until game:IsLoaded() and game.Players.LocalPlayer
+repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -72,6 +72,65 @@ local function SafeQuestVisible()
     local main = LocalPlayer.PlayerGui:FindFirstChild("Main")
     local quest = main and main:FindFirstChild("Quest")
     return quest and quest.Visible or false
+end
+
+function tweenToPosition(cf)
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp or not cf then return false end
+    local pos = cf.Position
+    local dist = (hrp.Position - pos).Magnitude
+    local speed = 350
+    local time = dist / speed
+    if time < 0.1 then time = 0.1 end
+    local ti = TweenService:Create(hrp, TweenInfo.new(time, Enum.EasingStyle.Linear), {CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))})
+    local finished = false
+    ti.Completed:Connect(function() finished = true end)
+    ti:Play()
+    local elapsed = 0
+    local timeout = time + 1
+    while not finished and elapsed < timeout do
+        task.wait(0.1)
+        elapsed = elapsed + 0.1
+    end
+    pcall(function() ti:Cancel() end)
+    return (hrp.Position - pos).Magnitude
+end
+
+function BTP(cf)
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp or not cf then return end
+    local dist = (hrp.Position - cf.Position).Magnitude
+    if dist <= 500 then
+        hrp.CFrame = cf
+        return
+    end
+    if dist > 1000 then
+        tweenToPosition(cf)
+        task.wait(0.2)
+        dist = (hrp.Position - cf.Position).Magnitude
+        if dist <= 500 then
+            hrp.CFrame = cf
+            return
+        end
+    end
+    while (hrp.Position - cf.Position).Magnitude > 600 do
+        local dir = (cf.Position - hrp.Position).Unit
+        local step = dir * 500
+        hrp.CFrame = CFrame.new(hrp.Position + step)
+        task.wait(0.05)
+    end
+    hrp.CFrame = cf
+end
+
+function AbandonQuest()
+    pcall(function()
+        local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
+        if questGui and questGui:FindFirstChild("Quest") and questGui.Quest.Visible then
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("AbandonQuest")
+            SetStatus("Konmeo22132", Color3.new(1, 0.2, 0.2))
+            task.wait(0.3)
+        end
+    end)
 end
 
 local noclipConn
@@ -284,12 +343,74 @@ function FarmBandit()
     if not World1 then return end
     EnableNoClip()
     local MyLevel = LocalPlayer.Data.Level.Value
+    local hrp = SafeHRP()
+    local banditQuestCF = CFrame.new(1059.37195, 15.4495068, 1550.4231)
+
+    spawn(function()
+        while task.wait(0.1) do
+            pcall(function()
+                local player = game.Players.LocalPlayer
+                local character = player.Character
+                local backpack = player.Backpack
+                local fruits = {
+                    {"Rocket Fruit","Rocket-Rocket"},{"Spin Fruit","Spin-Spin"},{"Blade Fruit","Blade-Blade"},
+                    {"Spring Fruit","Spring-Spring"},{"Bomb Fruit","Bomb-Bomb"},{"Smoke Fruit","Smoke-Smoke"},
+                    {"Spike Fruit","Spike-Spike"},{"Flame Fruit","Flame-Flame"},{"Falcon Fruit","Falcon-Falcon"},
+                    {"Ice Fruit","Ice-Ice"},{"Sand Fruit","Sand-Sand"},{"Dark Fruit","Dark-Dark"},
+                    {"Diamond Fruit","Diamond-Diamond"},{"Light Fruit","Light-Light"},{"Rubber Fruit","Rubber-Rubber"},
+                    {"Creation Fruit","Creation-Creation"},{"Ghost Fruit","Ghost-Ghost"},{"Magma Fruit","Magma-Magma"},
+                    {"Quake Fruit","Quake-Quake"},{"Buddha Fruit","Buddha-Buddha"},{"Love Fruit","Love-Love"},
+                    {"Spider Fruit","Spider-Spider"},{"Sound Fruit","Sound-Sound"},{"Phoenix Fruit","Phoenix-Phoenix"},
+                    {"Portal Fruit","Portal-Portal"},{"Lighting Fruit","Lighting-Lighting"},{"Pain Fruit","Pain-Pain"},
+                    {"Blizzard Fruit","Blizzard-Blizzard"},{"Gravity Fruit","Gravity-Gravity"},{"Mammoth Fruit","Mammoth-Mammoth"},
+                    {"T-Rex Fruit","T-Rex-T-Rex"},{"Dough Fruit","Dough-Dough"},{"Shadow Fruit","Shadow-Shadow"},
+                    {"Venom Fruit","Venom-Venom"},{"Gas Fruit","Gas-Gas"},{"Control Fruit","Control-Control"},
+                    {"Spirit Fruit","Spirit-Spirit"},{"Leopard Fruit","Leopard-Leopard"},{"Yeti Fruit","Yeti-Yeti"},
+                    {"Kitsune Fruit","Kitsune-Kitsune"},{"Dragon Fruit","Dragon (West)-Dragon (West)"},
+                    {"Dragon Fruit","Dragon (East)-Dragon (East)"}
+                }
+                for _, fruit in ipairs(fruits) do
+                    local fruitName, serverName = fruit[1], fruit[2]
+                    if character:FindFirstChild(fruitName) or backpack:FindFirstChild(fruitName) then
+                        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", serverName, backpack:FindFirstChild(fruitName))
+                    end
+                end
+            end)
+        end
+    end)
+
     while MyLevel < 10 do
+        local fruit = getNearestFruit and getNearestFruit()
+        if fruit and fruit:FindFirstChild("Handle") then
+            SetStatus("Collecting Fruit...", Color3.new(0,1,1))
+            local hrp = SafeHRP()
+            if hrp then
+                local pos = fruit.Handle.Position
+                local dist = (hrp.Position - pos).Magnitude
+                local tweenInfo = TweenInfo.new(math.clamp(dist / 300, 0.5, 5), Enum.EasingStyle.Linear)
+                local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(pos + Vector3.new(0,3,0))})
+                tween:Play()
+                tween.Completed:Wait()
+            end
+        end
+
+        pcall(function()
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("Cousin", "Buy")
+        end)
+
         SetStatus("Farming Bandit", Color3.new(1,0,0))
         if not SafeQuestVisible() then
-            local chrp = SafeHRP()
-            if chrp then
-                LocalPlayer.Character:PivotTo(CFrame.new(1059.37195,15.4495068,1550.4231))
+            local hrp = SafeHRP()
+            if hrp then
+                local distance = (hrp.Position - banditQuestCF.Position).Magnitude
+                if distance > 1000 then
+                    BTP(banditQuestCF)
+                else
+                    local tweenInfo = TweenInfo.new(distance / 250, Enum.EasingStyle.Linear)
+                    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = banditQuestCF})
+                    tween:Play()
+                    tween.Completed:Wait()
+                end
             end
             task.wait(1)
             pcall(function()
@@ -322,13 +443,74 @@ function FarmGodGuard()
     if MyLevel < 10 or MyLevel > 65 then return end
     EnableNoClip()
     local hrp = SafeHRP()
+    local entrancePos = Vector3.new(-4607.82275, 872.54248, -1667.55688)
+
+    spawn(function()
+        while task.wait(0.1) do
+            pcall(function()
+                local player = game.Players.LocalPlayer
+                local character = player.Character
+                local backpack = player.Backpack
+                local fruits = {
+                    {"Rocket Fruit","Rocket-Rocket"},{"Spin Fruit","Spin-Spin"},{"Blade Fruit","Blade-Blade"},
+                    {"Spring Fruit","Spring-Spring"},{"Bomb Fruit","Bomb-Bomb"},{"Smoke Fruit","Smoke-Smoke"},
+                    {"Spike Fruit","Spike-Spike"},{"Flame Fruit","Flame-Flame"},{"Falcon Fruit","Falcon-Falcon"},
+                    {"Ice Fruit","Ice-Ice"},{"Sand Fruit","Sand-Sand"},{"Dark Fruit","Dark-Dark"},
+                    {"Diamond Fruit","Diamond-Diamond"},{"Light Fruit","Light-Light"},{"Rubber Fruit","Rubber-Rubber"},
+                    {"Creation Fruit","Creation-Creation"},{"Ghost Fruit","Ghost-Ghost"},{"Magma Fruit","Magma-Magma"},
+                    {"Quake Fruit","Quake-Quake"},{"Buddha Fruit","Buddha-Buddha"},{"Love Fruit","Love-Love"},
+                    {"Spider Fruit","Spider-Spider"},{"Sound Fruit","Sound-Sound"},{"Phoenix Fruit","Phoenix-Phoenix"},
+                    {"Portal Fruit","Portal-Portal"},{"Lighting Fruit","Lighting-Lighting"},{"Pain Fruit","Pain-Pain"},
+                    {"Blizzard Fruit","Blizzard-Blizzard"},{"Gravity Fruit","Gravity-Gravity"},{"Mammoth Fruit","Mammoth-Mammoth"},
+                    {"T-Rex Fruit","T-Rex-T-Rex"},{"Dough Fruit","Dough-Dough"},{"Shadow Fruit","Shadow-Shadow"},
+                    {"Venom Fruit","Venom-Venom"},{"Gas Fruit","Gas-Gas"},{"Control Fruit","Control-Control"},
+                    {"Spirit Fruit","Spirit-Spirit"},{"Leopard Fruit","Leopard-Leopard"},{"Yeti Fruit","Yeti-Yeti"},
+                    {"Kitsune Fruit","Kitsune-Kitsune"},{"Dragon Fruit","Dragon (West)-Dragon (West)"},
+                    {"Dragon Fruit","Dragon (East)-Dragon (East)"}
+                }
+                for _, fruit in ipairs(fruits) do
+                    local fruitName, serverName = fruit[1], fruit[2]
+                    if character:FindFirstChild(fruitName) or backpack:FindFirstChild(fruitName) then
+                        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", serverName, backpack:FindFirstChild(fruitName))
+                    end
+                end
+            end)
+        end
+    end)
+
+    local function tweenToTarget(pos)
+        local hrp = SafeHRP()
+        if not hrp then return end
+        local distance = (hrp.Position - pos).Magnitude
+        if distance > 1000 then
+            BTP(CFrame.new(pos))
+        else
+            local tweenInfo = TweenInfo.new(distance / 300, Enum.EasingStyle.Linear)
+            local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(pos)})
+            tween:Play()
+            tween.Completed:Wait()
+        end
+    end
+
     if hrp then
+        tweenToTarget(entrancePos)
         pcall(function()
-            ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-4607.82275, 872.54248, -1667.55688))
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", entrancePos)
         end)
         task.wait(1)
     end
+
     while MyLevel >= 10 and MyLevel <= 65 do
+        local fruit = getNearestFruit and getNearestFruit()
+        if fruit and fruit:FindFirstChild("Handle") then
+            SetStatus("Collecting Fruit...", Color3.new(0,1,1))
+            tweenToTarget(fruit.Handle.Position + Vector3.new(0,3,0))
+        end
+
+        pcall(function()
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("Cousin","Buy")
+        end)
+
         SetStatus("Farming God's Guard", Color3.new(1, 0, 0))
         local target = NearestEnemyByPrefix("God's Guard")
         if target then
@@ -352,12 +534,70 @@ function FarmDesert1()
     if not World1 then return end
     EnableNoClip()
     local MyLevel = LocalPlayer.Data.Level.Value
+
+    spawn(function()
+        while task.wait(0.1) do
+            pcall(function()
+                local player = game.Players.LocalPlayer
+                local character = player.Character
+                local backpack = player.Backpack
+                local fruits = {
+                    {"Rocket Fruit","Rocket-Rocket"},{"Spin Fruit","Spin-Spin"},{"Blade Fruit","Blade-Blade"},
+                    {"Spring Fruit","Spring-Spring"},{"Bomb Fruit","Bomb-Bomb"},{"Smoke Fruit","Smoke-Smoke"},
+                    {"Spike Fruit","Spike-Spike"},{"Flame Fruit","Flame-Flame"},{"Falcon Fruit","Falcon-Falcon"},
+                    {"Ice Fruit","Ice-Ice"},{"Sand Fruit","Sand-Sand"},{"Dark Fruit","Dark-Dark"},
+                    {"Diamond Fruit","Diamond-Diamond"},{"Light Fruit","Light-Light"},{"Rubber Fruit","Rubber-Rubber"},
+                    {"Creation Fruit","Creation-Creation"},{"Ghost Fruit","Ghost-Ghost"},{"Magma Fruit","Magma-Magma"},
+                    {"Quake Fruit","Quake-Quake"},{"Buddha Fruit","Buddha-Buddha"},{"Love Fruit","Love-Love"},
+                    {"Spider Fruit","Spider-Spider"},{"Sound Fruit","Sound-Sound"},{"Phoenix Fruit","Phoenix-Phoenix"},
+                    {"Portal Fruit","Portal-Portal"},{"Lighting Fruit","Lighting-Lighting"},{"Pain Fruit","Pain-Pain"},
+                    {"Blizzard Fruit","Blizzard-Blizzard"},{"Gravity Fruit","Gravity-Gravity"},{"Mammoth Fruit","Mammoth-Mammoth"},
+                    {"T-Rex Fruit","T-Rex-T-Rex"},{"Dough Fruit","Dough-Dough"},{"Shadow Fruit","Shadow-Shadow"},
+                    {"Venom Fruit","Venom-Venom"},{"Gas Fruit","Gas-Gas"},{"Control Fruit","Control-Control"},
+                    {"Spirit Fruit","Spirit-Spirit"},{"Leopard Fruit","Leopard-Leopard"},{"Yeti Fruit","Yeti-Yeti"},
+                    {"Kitsune Fruit","Kitsune-Kitsune"},{"Dragon Fruit","Dragon (West)-Dragon (West)"},
+                    {"Dragon Fruit","Dragon (East)-Dragon (East)"}
+                }
+                for _, fruit in ipairs(fruits) do
+                    local fruitName, serverName = fruit[1], fruit[2]
+                    if character:FindFirstChild(fruitName) or backpack:FindFirstChild(fruitName) then
+                        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", serverName, backpack:FindFirstChild(fruitName))
+                    end
+                end
+            end)
+        end
+    end)
+
+    local function tweenToTarget(pos)
+        local hrp = SafeHRP()
+        if not hrp then return end
+        local distance = (hrp.Position - pos).Magnitude
+        if distance > 1000 then
+            BTP(CFrame.new(pos))
+        else
+            local tweenInfo = TweenInfo.new(distance / 300, Enum.EasingStyle.Linear)
+            local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(pos)})
+            tween:Play()
+            tween.Completed:Wait()
+        end
+    end
+
     while MyLevel >= 66 and MyLevel <= 74 do
+        local fruit = getNearestFruit and getNearestFruit()
+        if fruit and fruit:FindFirstChild("Handle") then
+            SetStatus("Collecting Fruit...", Color3.new(0,1,1))
+            tweenToTarget(fruit.Handle.Position + Vector3.new(0,3,0))
+        end
+
+        pcall(function()
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("Cousin","Buy")
+        end)
+
         SetStatus("Farming Desert Bandit", Color3.new(1, 0.7, 0))
         if not SafeQuestVisible() then
             local chrp = SafeHRP()
             if chrp then
-                LocalPlayer.Character:PivotTo(CFrame.new(894.488647, 5.14000702, 4392.43359))
+                tweenToTarget(Vector3.new(894.488647, 5.14000702, 4392.43359))
             end
             task.wait(1)
             pcall(function()
@@ -375,8 +615,7 @@ function FarmDesert1()
                 until not IsEntityAlive(target) or MyLevel > 74
                 StopHover()
             else
- 
-                LocalPlayer.Character:PivotTo(CFrame.new(924.7998046875, 6.44867467880249, 4481.5859375))
+                tweenToTarget(Vector3.new(924.7998046875, 6.44867467880249, 4481.5859375))
                 task.wait(0.5)
             end
         end
@@ -390,13 +629,70 @@ function FarmDesert2()
     if not World1 then return end
     EnableNoClip()
     local MyLevel = LocalPlayer.Data.Level.Value
+
+    spawn(function()
+        while task.wait(0.1) do
+            pcall(function()
+                local player = game.Players.LocalPlayer
+                local character = player.Character
+                local backpack = player.Backpack
+                local fruits = {
+                    {"Rocket Fruit","Rocket-Rocket"},{"Spin Fruit","Spin-Spin"},{"Blade Fruit","Blade-Blade"},
+                    {"Spring Fruit","Spring-Spring"},{"Bomb Fruit","Bomb-Bomb"},{"Smoke Fruit","Smoke-Smoke"},
+                    {"Spike Fruit","Spike-Spike"},{"Flame Fruit","Flame-Flame"},{"Falcon Fruit","Falcon-Falcon"},
+                    {"Ice Fruit","Ice-Ice"},{"Sand Fruit","Sand-Sand"},{"Dark Fruit","Dark-Dark"},
+                    {"Diamond Fruit","Diamond-Diamond"},{"Light Fruit","Light-Light"},{"Rubber Fruit","Rubber-Rubber"},
+                    {"Creation Fruit","Creation-Creation"},{"Ghost Fruit","Ghost-Ghost"},{"Magma Fruit","Magma-Magma"},
+                    {"Quake Fruit","Quake-Quake"},{"Buddha Fruit","Buddha-Buddha"},{"Love Fruit","Love-Love"},
+                    {"Spider Fruit","Spider-Spider"},{"Sound Fruit","Sound-Sound"},{"Phoenix Fruit","Phoenix-Phoenix"},
+                    {"Portal Fruit","Portal-Portal"},{"Lighting Fruit","Lighting-Lighting"},{"Pain Fruit","Pain-Pain"},
+                    {"Blizzard Fruit","Blizzard-Blizzard"},{"Gravity Fruit","Gravity-Gravity"},{"Mammoth Fruit","Mammoth-Mammoth"},
+                    {"T-Rex Fruit","T-Rex-T-Rex"},{"Dough Fruit","Dough-Dough"},{"Shadow Fruit","Shadow-Shadow"},
+                    {"Venom Fruit","Venom-Venom"},{"Gas Fruit","Gas-Gas"},{"Control Fruit","Control-Control"},
+                    {"Spirit Fruit","Spirit-Spirit"},{"Leopard Fruit","Leopard-Leopard"},{"Yeti Fruit","Yeti-Yeti"},
+                    {"Kitsune Fruit","Kitsune-Kitsune"},{"Dragon Fruit","Dragon (West)-Dragon (West)"},
+                    {"Dragon Fruit","Dragon (East)-Dragon (East)"}
+                }
+                for _, fruit in ipairs(fruits) do
+                    local fruitName, serverName = fruit[1], fruit[2]
+                    if character:FindFirstChild(fruitName) or backpack:FindFirstChild(fruitName) then
+                        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", serverName, backpack:FindFirstChild(fruitName))
+                    end
+                end
+            end)
+        end
+    end)
+
+    local function tweenToTarget(pos)
+        local hrp = SafeHRP()
+        if not hrp then return end
+        local distance = (hrp.Position - pos).Magnitude
+        if distance > 1000 then
+            BTP(CFrame.new(pos))
+        else
+            local tweenInfo = TweenInfo.new(distance / 300, Enum.EasingStyle.Linear)
+            local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(pos)})
+            tween:Play()
+            tween.Completed:Wait()
+        end
+    end
+
     while MyLevel >= 75 and MyLevel <= 89 do
+        local fruit = getNearestFruit and getNearestFruit()
+        if fruit and fruit:FindFirstChild("Handle") then
+            SetStatus("Collecting Fruit...", Color3.new(0,1,1))
+            tweenToTarget(fruit.Handle.Position + Vector3.new(0,3,0))
+        end
+
+        pcall(function()
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("Cousin","Buy")
+        end)
+
         SetStatus("Farming Desert Officer", Color3.new(1, 0.8, 0))
         if not SafeQuestVisible() then
             local chrp = SafeHRP()
             if chrp then
- 
-                LocalPlayer.Character:PivotTo(CFrame.new(894.488647, 5.14000702, 4392.43359))
+                tweenToTarget(Vector3.new(894.488647, 5.14000702, 4392.43359))
             end
             task.wait(1)
             pcall(function()
@@ -414,8 +710,7 @@ function FarmDesert2()
                 until not IsEntityAlive(target) or MyLevel > 89
                 StopHover()
             else
- 
-                LocalPlayer.Character:PivotTo(CFrame.new(1608.2822265625, 8.614224433898926, 4371.00732421875))
+                tweenToTarget(Vector3.new(1608.2822265625, 8.614224433898926, 4371.00732421875))
                 task.wait(0.5)
             end
         end
@@ -429,12 +724,70 @@ function FarmSnow1()
     if not World1 then return end
     EnableNoClip()
     local MyLevel = LocalPlayer.Data.Level.Value
+
+    spawn(function()
+        while task.wait(0.1) do
+            pcall(function()
+                local player = game.Players.LocalPlayer
+                local character = player.Character
+                local backpack = player.Backpack
+                local fruits = {
+                    {"Rocket Fruit","Rocket-Rocket"},{"Spin Fruit","Spin-Spin"},{"Blade Fruit","Blade-Blade"},
+                    {"Spring Fruit","Spring-Spring"},{"Bomb Fruit","Bomb-Bomb"},{"Smoke Fruit","Smoke-Smoke"},
+                    {"Spike Fruit","Spike-Spike"},{"Flame Fruit","Flame-Flame"},{"Falcon Fruit","Falcon-Falcon"},
+                    {"Ice Fruit","Ice-Ice"},{"Sand Fruit","Sand-Sand"},{"Dark Fruit","Dark-Dark"},
+                    {"Diamond Fruit","Diamond-Diamond"},{"Light Fruit","Light-Light"},{"Rubber Fruit","Rubber-Rubber"},
+                    {"Creation Fruit","Creation-Creation"},{"Ghost Fruit","Ghost-Ghost"},{"Magma Fruit","Magma-Magma"},
+                    {"Quake Fruit","Quake-Quake"},{"Buddha Fruit","Buddha-Buddha"},{"Love Fruit","Love-Love"},
+                    {"Spider Fruit","Spider-Spider"},{"Sound Fruit","Sound-Sound"},{"Phoenix Fruit","Phoenix-Phoenix"},
+                    {"Portal Fruit","Portal-Portal"},{"Lighting Fruit","Lighting-Lighting"},{"Pain Fruit","Pain-Pain"},
+                    {"Blizzard Fruit","Blizzard-Blizzard"},{"Gravity Fruit","Gravity-Gravity"},{"Mammoth Fruit","Mammoth-Mammoth"},
+                    {"T-Rex Fruit","T-Rex-T-Rex"},{"Dough Fruit","Dough-Dough"},{"Shadow Fruit","Shadow-Shadow"},
+                    {"Venom Fruit","Venom-Venom"},{"Gas Fruit","Gas-Gas"},{"Control Fruit","Control-Control"},
+                    {"Spirit Fruit","Spirit-Spirit"},{"Leopard Fruit","Leopard-Leopard"},{"Yeti Fruit","Yeti-Yeti"},
+                    {"Kitsune Fruit","Kitsune-Kitsune"},{"Dragon Fruit","Dragon (West)-Dragon (West)"},
+                    {"Dragon Fruit","Dragon (East)-Dragon (East)"}
+                }
+                for _, fruit in ipairs(fruits) do
+                    local fruitName, serverName = fruit[1], fruit[2]
+                    if character:FindFirstChild(fruitName) or backpack:FindFirstChild(fruitName) then
+                        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", serverName, backpack:FindFirstChild(fruitName))
+                    end
+                end
+            end)
+        end
+    end)
+
+    local function tweenToTarget(pos)
+        local hrp = SafeHRP()
+        if not hrp then return end
+        local distance = (hrp.Position - pos).Magnitude
+        if distance > 1000 then
+            BTP(CFrame.new(pos))
+        else
+            local tweenInfo = TweenInfo.new(distance / 300, Enum.EasingStyle.Linear)
+            local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(pos)})
+            tween:Play()
+            tween.Completed:Wait()
+        end
+    end
+
     while MyLevel >= 90 and MyLevel <= 99 do
+        local fruit = getNearestFruit and getNearestFruit()
+        if fruit and fruit:FindFirstChild("Handle") then
+            SetStatus("Collecting Fruit...", Color3.new(0,1,1))
+            tweenToTarget(fruit.Handle.Position + Vector3.new(0,3,0))
+        end
+
+        pcall(function()
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("Cousin","Buy")
+        end)
+
         SetStatus("Farming Snow Bandit", Color3.new(0.8, 0.9, 1))
         if not SafeQuestVisible() then
             local chrp = SafeHRP()
             if chrp then
-                LocalPlayer.Character:PivotTo(CFrame.new(1389.74451, 88.1519318, -1298.90796))
+                tweenToTarget(Vector3.new(1389.74451, 88.1519318, -1298.90796))
             end
             task.wait(1)
             pcall(function()
@@ -452,7 +805,7 @@ function FarmSnow1()
                 until not IsEntityAlive(target) or MyLevel > 99
                 StopHover()
             else
-                LocalPlayer.Character:PivotTo(CFrame.new(1354.347900390625, 87.27277374267578, -1393.946533203125))
+                tweenToTarget(Vector3.new(1354.347900390625, 87.27277374267578, -1393.946533203125))
                 task.wait(0.5)
             end
         end
@@ -466,12 +819,70 @@ function FarmSnow2()
     if not World1 then return end
     EnableNoClip()
     local MyLevel = LocalPlayer.Data.Level.Value
+
+    spawn(function()
+        while task.wait(0.1) do
+            pcall(function()
+                local player = game.Players.LocalPlayer
+                local character = player.Character
+                local backpack = player.Backpack
+                local fruits = {
+                    {"Rocket Fruit","Rocket-Rocket"},{"Spin Fruit","Spin-Spin"},{"Blade Fruit","Blade-Blade"},
+                    {"Spring Fruit","Spring-Spring"},{"Bomb Fruit","Bomb-Bomb"},{"Smoke Fruit","Smoke-Smoke"},
+                    {"Spike Fruit","Spike-Spike"},{"Flame Fruit","Flame-Flame"},{"Falcon Fruit","Falcon-Falcon"},
+                    {"Ice Fruit","Ice-Ice"},{"Sand Fruit","Sand-Sand"},{"Dark Fruit","Dark-Dark"},
+                    {"Diamond Fruit","Diamond-Diamond"},{"Light Fruit","Light-Light"},{"Rubber Fruit","Rubber-Rubber"},
+                    {"Creation Fruit","Creation-Creation"},{"Ghost Fruit","Ghost-Ghost"},{"Magma Fruit","Magma-Magma"},
+                    {"Quake Fruit","Quake-Quake"},{"Buddha Fruit","Buddha-Buddha"},{"Love Fruit","Love-Love"},
+                    {"Spider Fruit","Spider-Spider"},{"Sound Fruit","Sound-Sound"},{"Phoenix Fruit","Phoenix-Phoenix"},
+                    {"Portal Fruit","Portal-Portal"},{"Lighting Fruit","Lighting-Lighting"},{"Pain Fruit","Pain-Pain"},
+                    {"Blizzard Fruit","Blizzard-Blizzard"},{"Gravity Fruit","Gravity-Gravity"},{"Mammoth Fruit","Mammoth-Mammoth"},
+                    {"T-Rex Fruit","T-Rex-T-Rex"},{"Dough Fruit","Dough-Dough"},{"Shadow Fruit","Shadow-Shadow"},
+                    {"Venom Fruit","Venom-Venom"},{"Gas Fruit","Gas-Gas"},{"Control Fruit","Control-Control"},
+                    {"Spirit Fruit","Spirit-Spirit"},{"Leopard Fruit","Leopard-Leopard"},{"Yeti Fruit","Yeti-Yeti"},
+                    {"Kitsune Fruit","Kitsune-Kitsune"},{"Dragon Fruit","Dragon (West)-Dragon (West)"},
+                    {"Dragon Fruit","Dragon (East)-Dragon (East)"}
+                }
+                for _, fruit in ipairs(fruits) do
+                    local fruitName, serverName = fruit[1], fruit[2]
+                    if character:FindFirstChild(fruitName) or backpack:FindFirstChild(fruitName) then
+                        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", serverName, backpack:FindFirstChild(fruitName))
+                    end
+                end
+            end)
+        end
+    end)
+
+    local function tweenToTarget(pos)
+        local hrp = SafeHRP()
+        if not hrp then return end
+        local distance = (hrp.Position - pos).Magnitude
+        if distance > 1000 then
+            BTP(CFrame.new(pos))
+        else
+            local tweenInfo = TweenInfo.new(distance / 300, Enum.EasingStyle.Linear)
+            local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(pos)})
+            tween:Play()
+            tween.Completed:Wait()
+        end
+    end
+
     while MyLevel >= 100 and MyLevel <= 119 do
+        local fruit = getNearestFruit and getNearestFruit()
+        if fruit and fruit:FindFirstChild("Handle") then
+            SetStatus("Collecting Fruit...", Color3.new(0,1,1))
+            tweenToTarget(fruit.Handle.Position + Vector3.new(0,3,0))
+        end
+
+        pcall(function()
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("Cousin","Buy")
+        end)
+
         SetStatus("Farming Snowman", Color3.new(0.8, 0.9, 1))
         if not SafeQuestVisible() then
             local chrp = SafeHRP()
             if chrp then
-                LocalPlayer.Character:PivotTo(CFrame.new(1389.74451, 88.1519318, -1298.90796))
+                tweenToTarget(Vector3.new(1389.74451, 88.1519318, -1298.90796))
             end
             task.wait(1)
             pcall(function()
@@ -489,7 +900,7 @@ function FarmSnow2()
                 until not IsEntityAlive(target) or MyLevel > 119
                 StopHover()
             else
-                LocalPlayer.Character:PivotTo(CFrame.new(1201.6412353515625, 144.57958984375, -1550.0670166015625))
+                tweenToTarget(Vector3.new(1201.6412353515625, 144.57958984375, -1550.0670166015625))
                 task.wait(0.5)
             end
         end
@@ -574,6 +985,5 @@ spawn(function()
     FarmSnow1()
     task.wait(3)
     FarmSnow2()
-    task.wait(3)
     SetStatus("Idle", Color3.new(0.05,1,0.05))
 end)
