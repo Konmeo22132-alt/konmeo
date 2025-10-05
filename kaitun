@@ -595,10 +595,11 @@ function FarmDesert1()
 
         SetStatus("Farming Desert Bandit", Color3.new(1, 0.7, 0))
 
+        -- Abandon quest func, work 100% 🐧
         local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
         local questContainer = questGui and questGui:FindFirstChild("Quest") and questGui.Quest:FindFirstChild("Container")
         local questTitle = questContainer and questContainer:FindFirstChild("QuestTitle") and questContainer.QuestTitle:FindFirstChild("Title")
-        if questTitle and questTitle.Text ~= "" and not string.find(questTitle.Text, "Desert") then
+        if questTitle and questTitle.Text ~= "" and not string.find(questTitle.Text, "Desert Bandit") then
             AbandonQuest()
             task.wait(0.5)
         end
@@ -634,6 +635,7 @@ function FarmDesert1()
     end
     DisableNoClip()
 end
+
 
 function FarmDesert2()
     if not World1 then return end
@@ -700,10 +702,11 @@ function FarmDesert2()
 
         SetStatus("Farming Desert Officer", Color3.new(1, 0.8, 0))
 
+        -- Func nay la de huy quest
         local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
         local questContainer = questGui and questGui:FindFirstChild("Quest") and questGui.Quest:FindFirstChild("Container")
         local questTitle = questContainer and questContainer:FindFirstChild("QuestTitle") and questContainer.QuestTitle:FindFirstChild("Title")
-        if questTitle and questTitle.Text ~= "" and not string.find(questTitle.Text, "Desert") then
+        if questTitle and questTitle.Text ~= "" and not string.find(questTitle.Text, "Desert Officer") then
             AbandonQuest()
             task.wait(0.5)
         end
@@ -808,7 +811,7 @@ function FarmSnow1()
         local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
         local questContainer = questGui and questGui:FindFirstChild("Quest") and questGui.Quest:FindFirstChild("Container")
         local questTitle = questContainer and questContainer:FindFirstChild("QuestTitle") and questContainer.QuestTitle:FindFirstChild("Title")
-        if questTitle and questTitle.Text ~= "" and not string.find(questTitle.Text, "Snow") then
+        if questTitle and questTitle.Text ~= "" and not string.find(questTitle.Text, "Snow Bandit") then
             AbandonQuest()
             task.wait(0.5)
         end
@@ -912,7 +915,7 @@ function FarmSnow2()
         local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
         local questContainer = questGui and questGui:FindFirstChild("Quest") and questGui.Quest:FindFirstChild("Container")
         local questTitle = questContainer and questContainer:FindFirstChild("QuestTitle") and questContainer.QuestTitle:FindFirstChild("Title")
-        if questTitle and questTitle.Text ~= "" and not string.find(questTitle.Text, "Snow") then
+        if questTitle and questTitle.Text ~= "" and not string.find(questTitle.Text, "Snowman") then
             AbandonQuest()
             task.wait(0.5)
         end
