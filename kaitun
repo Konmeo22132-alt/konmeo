@@ -594,6 +594,15 @@ function FarmDesert1()
         end)
 
         SetStatus("Farming Desert Bandit", Color3.new(1, 0.7, 0))
+
+        local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
+        local questContainer = questGui and questGui:FindFirstChild("Quest") and questGui.Quest:FindFirstChild("Container")
+        local questTitle = questContainer and questContainer:FindFirstChild("QuestTitle") and questContainer.QuestTitle:FindFirstChild("Title")
+        if questTitle and questTitle.Text ~= "" and not string.find(questTitle.Text, "Desert") then
+            AbandonQuest()
+            task.wait(0.5)
+        end
+
         if not SafeQuestVisible() then
             local chrp = SafeHRP()
             if chrp then
@@ -619,6 +628,7 @@ function FarmDesert1()
                 task.wait(0.5)
             end
         end
+
         MyLevel = LocalPlayer.Data.Level.Value
         task.wait(0.1)
     end
@@ -689,6 +699,15 @@ function FarmDesert2()
         end)
 
         SetStatus("Farming Desert Officer", Color3.new(1, 0.8, 0))
+
+        local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
+        local questContainer = questGui and questGui:FindFirstChild("Quest") and questGui.Quest:FindFirstChild("Container")
+        local questTitle = questContainer and questContainer:FindFirstChild("QuestTitle") and questContainer.QuestTitle:FindFirstChild("Title")
+        if questTitle and questTitle.Text ~= "" and not string.find(questTitle.Text, "Desert") then
+            AbandonQuest()
+            task.wait(0.5)
+        end
+
         if not SafeQuestVisible() then
             local chrp = SafeHRP()
             if chrp then
@@ -714,6 +733,7 @@ function FarmDesert2()
                 task.wait(0.5)
             end
         end
+
         MyLevel = LocalPlayer.Data.Level.Value
         task.wait(0.1)
     end
@@ -784,6 +804,15 @@ function FarmSnow1()
         end)
 
         SetStatus("Farming Snow Bandit", Color3.new(0.8, 0.9, 1))
+
+        local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
+        local questContainer = questGui and questGui:FindFirstChild("Quest") and questGui.Quest:FindFirstChild("Container")
+        local questTitle = questContainer and questContainer:FindFirstChild("QuestTitle") and questContainer.QuestTitle:FindFirstChild("Title")
+        if questTitle and questTitle.Text ~= "" and not string.find(questTitle.Text, "Snow") then
+            AbandonQuest()
+            task.wait(0.5)
+        end
+
         if not SafeQuestVisible() then
             local chrp = SafeHRP()
             if chrp then
@@ -879,6 +908,15 @@ function FarmSnow2()
         end)
 
         SetStatus("Farming Snowman", Color3.new(0.8, 0.9, 1))
+
+        local questGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
+        local questContainer = questGui and questGui:FindFirstChild("Quest") and questGui.Quest:FindFirstChild("Container")
+        local questTitle = questContainer and questContainer:FindFirstChild("QuestTitle") and questContainer.QuestTitle:FindFirstChild("Title")
+        if questTitle and questTitle.Text ~= "" and not string.find(questTitle.Text, "Snow") then
+            AbandonQuest()
+            task.wait(0.5)
+        end
+
         if not SafeQuestVisible() then
             local chrp = SafeHRP()
             if chrp then
@@ -977,7 +1015,9 @@ spawn(function()
     SetStatus("Idle", Color3.new(0.05,1,0.05))
     task.wait(0.5)
     FarmBandit()
+    task.wait(3)
     FarmGodGuard()
+    task.wait(3)
     FarmDesert1()
     task.wait(3)
     FarmDesert2()
