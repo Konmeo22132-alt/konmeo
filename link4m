@@ -1,2 +1,619 @@
-Token: XPGRtPRsedrxIGF1ctoiPjNMW5EIHEb8
-Userid: 1837196
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PathfindingService = game:GetService("PathfindingService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local Mouse = LocalPlayer:GetMouse()
+
+local targetRing = Workspace.Lobby.DuelRingsGroup.DuelRing_1v1.DuelPad.Ring
+local AutoFireEnabled = false
+local AutoFireMode = "Auto Shoot"
+local TargetPart = "Head"
+local TeamCheckEnabled = true
+local SilentAimFOV = 120
+local AutoStabRange = 7
+local DetectionMode = "Both"
+
+local AimbotEnabled = false
+local AimbotSmoothness = 4
+local TriggerBotEnabled = false
+local KillAllEnabled = false
+local AutoStabEnabled = false
+local vu56 = 2
+local vu11 = 0.75
+local MAX_DISTANCE = 500
+local vu490 = nil
+local vu491 = 0
+local vu51 = {}
+local Character
+
+local lastSkeletonPositions = {}
+local lastSkeletonMoveTime = {}
+
+local function isOnSameTeam(p252)
+    if TeamCheckEnabled then
+        if p252 and LocalPlayer then
+            if p252.Team and LocalPlayer.Team then
+                return p252.Team == LocalPlayer.Team
+            else
+                return false
+            end
+        else
+            return false
+        end
+    else
+        return false
+    end
+end
+
+local function walkToRing()
+    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local humanoid = char:WaitForChild("Humanoid")
+    humanoid:MoveTo(Vector3.new(24.737667, -114.977928, 38.107487))
+    humanoid.MoveToFinished:Wait()
+    humanoid:MoveTo(targetRing.Position)
+end
+
+local skeletonParts = {
+    {"Head","UpperTorso"},{"UpperTorso","LowerTorso"},
+    {"UpperTorso","LeftUpperArm"},{"LeftUpperArm","LeftLowerArm"},{"LeftLowerArm","LeftHand"},
+    {"UpperTorso","RightUpperArm"},{"RightUpperArm","RightLowerArm"},{"RightLowerArm","RightHand"},
+    {"LowerTorso","LeftUpperLeg"},{"LeftUpperLeg","LeftLowerLeg"},{"LeftLowerLeg","LeftFoot"},
+    {"LowerTorso","RightUpperLeg"},{"RightUpperLeg","RightLowerLeg"},{"RightLowerLeg","RightFoot"}
+}
+
+local function createSkeleton(player)
+    vu51[player] = {}
+    for _ = 1, #skeletonParts do
+        local line = Drawing.new("Line")
+        line.Thickness = 2
+        line.Color = Color3.fromRGB(0,255,0)
+        line.Transparency = 1
+        line.Visible = false
+        table.insert(vu51[player], line)
+    end
+end
+
+local function clearSkeleton(player)
+    local lines = vu51[player]
+    if lines then
+        for _, line in ipairs(lines) do
+            line.Visible = false
+            line:Remove()
+        end
+        vu51[player] = nil
+        lastSkeletonPositions[player] = nil
+        lastSkeletonMoveTime[player] = nil
+    end
+end
+
+local function clearAllSkeletons()
+    for plr,_ in pairs(vu51) do
+        clearSkeleton(plr)
+    end
+end
+
+local enemyCache = {}
+
+local function clearEnemyCache()
+    clearAllSkeletons()
+    vu51 = {}
+    enemyCache = {}
+end
+
+local function scanEnemyPlayers()
+    enemyCache = {}
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character and not isOnSameTeam(plr) then
+            local humanoid = plr.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid and humanoid.Health > 0 then
+                table.insert(enemyCache, plr)
+            end
+        end
+    end
+    return enemyCache
+end
+
+local function trackSkeletonMovement(player)
+    local char = player.Character
+    if not char then return end
+
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local currentPos = hrp.Position
+    local lastPos = lastSkeletonPositions[player]
+
+    if not lastPos then
+        lastSkeletonPositions[player] = currentPos
+        lastSkeletonMoveTime[player] = tick()
+        return
+    end
+
+    if (currentPos - lastPos).Magnitude > 0.2 then
+        lastSkeletonMoveTime[player] = tick()
+    end
+
+    lastSkeletonPositions[player] = currentPos
+end
+
+local function checkStuckSkeletons()
+    local now = tick()
+    for plr,_ in pairs(vu51) do
+        if lastSkeletonMoveTime[plr] and now - lastSkeletonMoveTime[plr] >= 3 then
+            clearEnemyCache()
+            scanEnemyPlayers()
+            updateESP()
+            return
+        end
+    end
+end
+
+local function checkSkeletonCount()
+    local count = 0
+    for _ in pairs(vu51) do
+        count += 1
+    end
+
+    if count > 1 then
+        clearEnemyCache()
+        scanEnemyPlayers()
+        updateESP()
+    end
+end
+
+task.spawn(function()
+    while true do
+        task.wait(1)
+        checkSkeletonCount()
+        checkStuckSkeletons()
+    end
+end)
+
+local function updateSkeleton(player)
+    local char = player.Character
+    if not char or not vu51[player] then return end
+    for i, part in ipairs(skeletonParts) do
+        local p1 = char:FindFirstChild(part[1])
+        local p2 = char:FindFirstChild(part[2])
+        local line = vu51[player][i]
+        if p1 and p2 then
+            local p1s, on1 = Camera:WorldToViewportPoint(p1.Position)
+            local p2s, on2 = Camera:WorldToViewportPoint(p2.Position)
+            if on1 and on2 then
+                line.From = Vector2.new(p1s.X,p1s.Y)
+                line.To = Vector2.new(p2s.X,p2s.Y)
+                line.Visible = true
+            else
+                line.Visible = false
+            end
+        else
+            line.Visible = false
+        end
+    end
+end
+
+local function updateESP()
+    local enemies = scanEnemyPlayers()
+    local enemySet = {}
+
+    for _, plr in ipairs(enemies) do
+        enemySet[plr] = true
+    end
+
+    for plr,_ in pairs(vu51) do
+        if not enemySet[plr] then
+            clearSkeleton(plr)
+        end
+    end
+
+    for _, player in ipairs(enemies) do
+        if not vu51[player] then
+            createSkeleton(player)
+        end
+        updateSkeleton(player)
+        trackSkeletonMovement(player)
+    end
+end
+
+Players.PlayerRemoving:Connect(function(plr)
+    clearSkeleton(plr)
+end)
+
+local function getEquippedWeapon()
+    local char = LocalPlayer.Character
+    if char then
+        return char:FindFirstChildOfClass("Tool")
+    end
+end
+
+local function vu234(type)
+    local backpack = LocalPlayer.Backpack
+    local char = LocalPlayer.Character
+    local current = getEquippedWeapon()
+    if current then current.Parent = backpack end
+    for _, tool in ipairs(backpack:GetChildren()) do
+        if tool:IsA("Tool") then
+            local fire = tool:FindFirstChild("Fire", true)
+            if type == "Gun" and fire then
+                tool.Parent = char
+                return tool
+            end
+        end
+    end
+end
+
+local ShootRemote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("ShootGun")
+
+local function shootGun(targetCharacter, randomSpread)
+    if not targetCharacter or targetCharacter == LocalPlayer.Character then return end
+    local char = LocalPlayer.Character
+    local part = targetCharacter:FindFirstChild(TargetPart) or targetCharacter:FindFirstChild("Head")
+    if not part then return end
+    local pos = part.Position
+    if randomSpread then
+        pos = pos + Vector3.new((math.random()*2-1) * vu11,(math.random()*2-1) * vu11,(math.random()*2-1) * vu11)
+    end
+    local gun = getEquippedWeapon()
+    if gun and gun:FindFirstChild("Fire", true) then
+        local fireSound = gun:FindFirstChild("Fire", true)
+        if fireSound then fireSound:Play() end
+        local muzzle = gun:FindFirstChild("Muzzle", true)
+        if muzzle then
+            require(ReplicatedStorage.Modules.BulletRenderer)(muzzle.WorldPosition, pos, gun:GetAttribute("BulletType"))
+        end
+        gun:Activate()
+    end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if hrp and ShootRemote then
+        ShootRemote:FireServer(hrp.Position, pos, part, pos)
+    end
+end
+
+local function isPlayerInView(p253)
+    if not p253.Character then return false end
+    if not (Character and Character:FindFirstChild("Head")) then return false end
+    local head = p253.Character:FindFirstChild("Head")
+    if not head then return false end
+    local myHead = Character.Head
+    if DetectionMode == "Camera" or DetectionMode == "Both" then
+        local _, visible = Camera:WorldToScreenPoint(head.Position)
+        if visible then
+            local camPos = Camera.CFrame.Position
+            local dir = head.Position - camPos
+            local params = RaycastParams.new()
+            params.FilterType = Enum.RaycastFilterType.Blacklist
+            params.FilterDescendantsInstances = { Character, p253.Character }
+            if not Workspace:Raycast(camPos, dir, params) then
+                return true
+            end
+        end
+    end
+    if DetectionMode == "Raycast" or DetectionMode == "Both" then
+        local myPos = myHead.Position
+        local dir = head.Position - myPos
+        local params = RaycastParams.new()
+        params.FilterType = Enum.RaycastFilterType.Blacklist
+        params.FilterDescendantsInstances = { Character, p253.Character }
+        if not Workspace:Raycast(myPos, dir, params) then
+            return true
+        end
+    end
+    return false
+end
+
+local function getAllPlayers()
+    return scanEnemyPlayers()
+end
+
+local function getClosestPlayerToMouse()
+    local fov = SilentAimFOV
+    local mousePos = Vector2.new(Mouse.X, Mouse.Y)
+    local best = nil
+    local enemies = scanEnemyPlayers()
+    for _,plr in ipairs(enemies) do
+        local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+        local head = plr.Character:FindFirstChild("Head")
+        if hum and hum.Health > 0 and head then
+            local screenPos, onscreen = Camera:WorldToScreenPoint(head.Position)
+            if onscreen then
+                local diff = (mousePos - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
+                if diff < fov then
+                    best = plr
+                    fov = diff
+                end
+            end
+        end
+    end
+    return best
+end
+
+local function getClosestPlayerToCenter()
+    local bestDist = math.huge
+    local screenCenter = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    local best = nil
+    local enemies = scanEnemyPlayers()
+    for _,plr in ipairs(enemies) do
+        local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+        local head = plr.Character:FindFirstChild("Head")
+        if hum and hum.Health > 0 and head then
+            local screenPos, onscreen = Camera:WorldToScreenPoint(head.Position)
+            if onscreen then
+                local dist = (screenCenter - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
+                if dist < bestDist then
+                    bestDist = dist
+                    best = plr
+                end
+            end
+        end
+    end
+    return best
+end
+
+local function getClosestPlayerInRange()
+    if not Character or not Character:FindFirstChild("HumanoidRootPart") then
+        return nil
+    end
+    local closest = nil
+    local range = AutoStabRange
+    local enemies = scanEnemyPlayers()
+    for _,plr in ipairs(enemies) do
+        local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+        local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+        if hum and hum.Health > 0 and hrp then
+            local dist = (hrp.Position - Character.HumanoidRootPart.Position).Magnitude
+            if dist < range then
+                closest = plr
+                range = dist
+            end
+        end
+    end
+    return closest
+end
+
+function startAimbot()
+    if not vu519 then
+        vu519 = RunService.RenderStepped:Connect(function()
+            if AimbotEnabled then
+                local target = getClosestPlayerToCenter()
+                local part = target and target.Character and (target.Character:FindFirstChild(TargetPart) or target.Character:FindFirstChild("Head"))
+                if part then
+                    local targetCF = CFrame.new(Camera.CFrame.Position, part.Position)
+                    if AimbotSmoothness <= 0 then
+                        Camera.CFrame = targetCF
+                    else
+                        Camera.CFrame = Camera.CFrame:Lerp(targetCF, 1/AimbotSmoothness)
+                    end
+                end
+            end
+        end)
+    end
+end
+
+function startTriggerbot()
+    if not vu523 then
+        vu523 = RunService.Heartbeat:Connect(function()
+            if TriggerBotEnabled then
+                local now = tick()
+                if now - vu524 >= vu525 then
+                    local target = getClosestPlayerToMouse()
+                    if target and target.Character and isPlayerInView(target) then
+                        shootGun(target.Character)
+                        vu524 = now
+                    end
+                end
+            end
+        end)
+    end
+end
+
+function startKillAll()
+    if not vu413 then
+        vu413 = RunService.Heartbeat:Connect(function()
+            if not KillAllEnabled then return end
+            local enemies = getAllPlayers()
+            for _,plr in ipairs(enemies) do
+                if plr.Character then
+                    shootGun(plr.Character)
+                    break
+                end
+            end
+        end)
+    end
+end
+
+function startAutoStab()
+    if not vu513 then
+        vu513 = RunService.Heartbeat:Connect(function()
+            if AutoStabEnabled then
+                local now = tick()
+                if now - vu514 >= vu58 then
+                    local target = getClosestPlayerInRange()
+                    if target and target.Character then
+                        stabKnife(target.Character)
+                        vu514 = now
+                    end
+                end
+            end
+        end)
+    end
+end
+
+function startAutoFire()
+    if vu490 then return end
+    vu490 = RunService.Heartbeat:Connect(function()
+        if not AutoFireEnabled then return end
+        updateESP()
+        Character = LocalPlayer.Character
+        local now = tick()
+        if now - vu491 < vu56 then return end
+        local myhrp = Character and Character:FindFirstChild("HumanoidRootPart")
+        if not myhrp then return end
+        local enemies = scanEnemyPlayers()
+        for _, player in ipairs(enemies) do
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+            if humanoid and humanoid.Health > 0 and hrp then
+                local dist = (hrp.Position - myhrp.Position).Magnitude
+                if dist <= MAX_DISTANCE and isPlayerInView(player) then
+                    local gun = getEquippedWeapon()
+                    if not (gun and gun:FindFirstChild("Fire", true)) then
+                        vu234("Gun")
+                        task.wait(0.1)
+                    end
+                    shootGun(player.Character, true)
+                    vu491 = now
+                    break
+                end
+            end
+        end
+    end)
+end
+
+local aiConnection
+
+local function getClosestEnemy()
+    local enemies = scanEnemyPlayers()
+    local closest = nil
+    local shortest = math.huge
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not root then
+        return nil
+    end
+    for _, enemy in ipairs(enemies) do
+        local eroot = enemy.Character and enemy.Character:FindFirstChild("HumanoidRootPart")
+        if eroot then
+            local dist = (eroot.Position - root.Position).Magnitude
+            if dist < shortest then
+                shortest = dist
+                closest = enemy
+            end
+        end
+    end
+    return closest
+end
+
+local function computePath(targetPos)
+    local agentParams = {
+        AgentHeight = 5,
+        AgentRadius = 2,
+        AgentCanJump = true,
+        AgentJumpHeight = 8
+    }
+    local path = PathfindingService:CreatePath(agentParams)
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not root then
+        return nil
+    end
+    path:ComputeAsync(root.Position, targetPos)
+    if path.Status == Enum.PathStatus.Success then
+        return path:GetWaypoints()
+    end
+    return nil
+end
+
+local function followPath(waypoints)
+    local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then
+        return
+    end
+    for _, wp in ipairs(waypoints) do
+        local team = LocalPlayer.Team
+        if not team or (team.Name ~= "Team1" and team.Name ~= "Team2") then
+            return
+        end
+        if wp.Action == Enum.PathWaypointAction.Jump then
+            humanoid.Jump = true
+        end
+        humanoid:MoveTo(wp.Position)
+        humanoid.MoveToFinished:Wait()
+    end
+end
+
+local function rotateCameraToEnemy(enemy)
+    local eroot = enemy.Character and enemy.Character:FindFirstChild("HumanoidRootPart")
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if eroot and root then
+        local dir = (eroot.Position - root.Position).Unit
+        local cam = Workspace.CurrentCamera
+        cam.CFrame = CFrame.new(cam.CFrame.Position, cam.CFrame.Position + dir)
+    end
+end
+
+local function isValidTeam()
+    local t = LocalPlayer.Team
+    if not t then
+        return false
+    end
+    return t.Name == "Team1" or t.Name == "Team2"
+end
+
+local function processAI()
+    if not isValidTeam() then
+        return
+    end
+    local enemy = getClosestEnemy()
+    if not enemy then
+        return
+    end
+    local eroot = enemy.Character and enemy.Character:FindFirstChild("HumanoidRootPart")
+    if not eroot then
+        return
+    end
+    local waypoints = computePath(eroot.Position)
+    if waypoints then
+        followPath(waypoints)
+        rotateCameraToEnemy(enemy)
+    end
+end
+
+local function checkTeam()
+    Character = LocalPlayer.Character
+    local team = LocalPlayer.Team
+
+    task.delay(5, function()
+        if LocalPlayer.Team == team then
+            clearAllSkeletons()
+            clearEnemyCache()
+            scanEnemyPlayers()
+            updateESP()
+        end
+    end)
+
+    if not team or (team.Name ~= "Team1" and team.Name ~= "Team2") then
+        AutoFireEnabled = false
+        if aiConnection then
+            aiConnection:Disconnect()
+            aiConnection = nil
+        end
+        walkToRing()
+    else
+        AutoFireEnabled = true
+        startAutoFire()
+        startAimbot()
+        startTriggerbot()
+        startKillAll()
+        startAutoStab()
+
+        if not aiConnection then
+            aiConnection = RunService.Heartbeat:Connect(function()
+                processAI()
+            end)
+        end
+    end
+end
+
+LocalPlayer:GetPropertyChangedSignal("Team"):Connect(checkTeam)
+LocalPlayer.CharacterAdded:Connect(checkTeam)
+checkTeam()
+
+RunService.Stepped:Connect(function()
+    local team = LocalPlayer.Team
+    if team and (team.Name == "Team1" or team.Name == "Team2") then
+        if AutoFireEnabled and not vu490 then
+            startAutoFire()
+        end
+    end
+end)
